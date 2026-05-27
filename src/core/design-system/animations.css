@@ -1,0 +1,99 @@
+/* ==========================================================================
+   Aurea Elizabeth - Premium Design System: Animations & Micro-interactions
+   ========================================================================== */
+
+/* Simulación poética del humo de sahumerio */
+@keyframes floatSmoke {
+  0% {
+    transform: translateY(110%) translateX(0) scale(0.9) rotate(0deg);
+    opacity: 0;
+    filter: blur(3px);
+  }
+  10% {
+    opacity: 0.15;
+    filter: blur(4px);
+  }
+  30% {
+    transform: translateY(70%) translateX(-8px) scale(1.1) rotate(3deg);
+    opacity: 0.25;
+    filter: blur(6px);
+  }
+  50% {
+    transform: translateY(40%) translateX(12px) scale(1.3) rotate(-5deg);
+    opacity: 0.18;
+    filter: blur(8px);
+  }
+  75% {
+    transform: translateY(15%) translateX(-15px) scale(1.6) rotate(8deg);
+    opacity: 0.08;
+    filter: blur(10px);
+  }
+  100% {
+    transform: translateY(-20%) translateX(10px) scale(2.0) rotate(-12deg);
+    opacity: 0;
+    filter: blur(15px);
+  }
+}
+
+/* Efecto de entrada fluida y mística de elementos al scrollear */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), transform 1.0s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.reveal-on-scroll.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hover de lujo 3D interactivo */
+.card-premium-hover {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-premium-hover:hover {
+  transform: scale(1.02) perspective(1000px) rotateX(1deg) rotateY(1deg) translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35), 0 0 1px rgba(197, 168, 128, 0.25);
+  border-color: rgba(197, 168, 128, 0.35);
+}
+
+/* Hover de sello de cera editorial */
+.wax-seal-hover {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wax-seal-hover:hover {
+  transform: rotate(-4deg) scale(1.08) !important;
+  box-shadow: inset 2px 2px 4px rgba(255,255,255,0.35), inset -2px -2px 6px rgba(0,0,0,0.4), 0 10px 24px rgba(0,0,0,0.55) !important;
+}
+
+/* Micro-animación de pulso orgánico para respiración circular */
+@keyframes breathingInhaleExhale {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 20px rgba(163, 107, 78, 0.15);
+  }
+  45% {
+    transform: scale(1.35);
+    box-shadow: 0 0 60px rgba(197, 160, 89, 0.5);
+  }
+  55% {
+    transform: scale(1.35);
+    box-shadow: 0 0 60px rgba(197, 160, 89, 0.5);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 20px rgba(163, 107, 78, 0.15);
+  }
+}
+
+.organic-breath {
+  animation: breathingInhaleExhale 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
