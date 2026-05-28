@@ -11,7 +11,6 @@ import {
   Compass,
   ChevronLeft,
   ChevronRight,
-  Star,
   Sparkles,
   ArrowRight,
   Play,
@@ -40,6 +39,68 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
   // Kit Destacado Steps Interactivity
   const [activeKitStep, setActiveKitStep] = useState<number>(0);
+
+  // Color Palette Definitions & State
+  const colorPalette = [
+    {
+      name: 'Tierra Profunda',
+      variable: '--color-tierra-profunda',
+      hex: '#E5D9C4',
+      meaning: 'La base de arena y lino que ancla tu respiración.',
+      mood: 'Estabilidad y Arraigo'
+    },
+    {
+      name: 'Arena Tostada',
+      variable: '--color-arena-tostada',
+      hex: '#D5C8B4',
+      meaning: 'La calidez orgánica de las texturas que nos sostienen.',
+      mood: 'Pausa y Refugio'
+    },
+    {
+      name: 'Crema Cálido',
+      variable: '--color-crema-calido',
+      hex: '#F5EFE4',
+      meaning: 'La luz tenue que invita a respirar con tranquilidad.',
+      mood: 'Claridad y Calma'
+    },
+    {
+      name: 'Oliva Salvia',
+      variable: '--color-oliva-salvia',
+      hex: '#4F5E4C',
+      meaning: 'La conexión botánica que restaura el flujo vital.',
+      mood: 'Armonía y Equilibrio'
+    },
+    {
+      name: 'Bosque Suave',
+      variable: '--color-bosque-suave',
+      hex: '#343F32',
+      meaning: 'La sabiduría y quietud de los espacios inexplorados.',
+      mood: 'Paz Profunda'
+    },
+    {
+      name: 'Dorado Mate',
+      variable: '--color-dorado-mate',
+      hex: '#B08E62',
+      meaning: 'El brillo sutil de los detalles que importan.',
+      mood: 'Sutileza y Valor'
+    },
+    {
+      name: 'Terracota Suave',
+      variable: '--color-terracota-suave',
+      hex: '#9E6252',
+      meaning: 'El fuego lento que reconforta el alma cansada.',
+      mood: 'Calidez Humana'
+    },
+    {
+      name: 'Magenta Oscuro',
+      variable: '--color-magenta-oscuro',
+      hex: '#8A004F',
+      meaning: 'Un acento vibrante de vitalidad y misterio profundo.',
+      mood: 'Vitalidad y Misterio'
+    }
+  ];
+
+  const [selectedPaletteColor, setSelectedPaletteColor] = useState(colorPalette[0]);
 
   // Ref to observe items entering viewport
   const revealRefs = useRef<HTMLDivElement[]>([]);
@@ -328,7 +389,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 width: 'min(95vw, 600px)',
                 height: 'min(95vw, 600px)',
                 borderRadius: '50%',
-                border: '1px dashed rgba(197, 160, 89, 0.16)',
+                border: '1px dashed var(--color-selected-active, rgba(197, 160, 89, 0.3))',
                 animation: 'spin 180s linear infinite',
                 pointerEvents: 'none',
                 zIndex: 0
@@ -383,21 +444,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               “No vendemos objetos; te invitamos a fundar un oasis en tu cotidianidad. Nuestras alquimias están diseñadas con materias primas nobles y puras para desacelerar tu sistema nervioso y reconectarte con tu eje.”
             </p>
 
-            {/* Los Botones Interactivos */}
             <div style={{ display: 'flex', gap: '20px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Button
-                variant="magenta"
-                size="lg"
-                onClick={() => onNavigate('rituals')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}
-              >
-                <span>Explorar rituales</span>
-                <ArrowRight size={16} />
-              </Button>
               <Button
                 variant="terracota-outline"
                 size="lg"
@@ -690,7 +737,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           )}
 
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <Button variant="magenta" onClick={() => onNavigate('catalog')}>
+            <Button variant="terracota" onClick={() => onNavigate('catalog')}>
               Ver toda la colección botánica
             </Button>
           </div>
@@ -890,22 +937,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
-
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      size={16}
-                      color="var(--color-dorado-mate)"
-                      fill={i < bestSellers[activeCarouselIndex].rating ? 'var(--color-dorado-mate)' : 'none'}
-                    />
-                  ))}
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
-                    ({bestSellers[activeCarouselIndex].sales} almas conformes)
-                  </span>
-                </div>
-
                 <Typography variant="caption" color="gold">{bestSellers[activeCarouselIndex].category}</Typography>
                 <Typography variant="h2" style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)' }}>{bestSellers[activeCarouselIndex].name}</Typography>
 
@@ -1131,11 +1163,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
       </section>
+
+
 
       {/* 8. WIDGETS DE BIENESTAR INMERSIVO (RESPIRACIÓN CIRCULAR + INVITE QUIZ) */}
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
@@ -1205,7 +1238,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '240px' }}>
                 <Button
-                  variant={breathActive ? 'secondary' : 'primary'}
+                  variant={breathActive ? 'secondary' : 'terracota'}
                   onClick={() => {
                     setBreathActive(!breathActive);
                     setBreathPhase(breathActive ? 'Pausa' : 'Inhalá');
@@ -1299,7 +1332,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               </div>
 
               <Button
-                variant="primary"
+                variant="terracota"
                 onClick={() => onNavigate('rituals')}
                 style={{
                   display: 'flex',

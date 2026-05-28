@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body' | 'body-sm' | 'caption';
-export type TypographyColor = 'light' | 'muted' | 'gold' | 'terracota' | 'dark' | 'inherit';
+export type TypographyColor = 'tierra' | 'arena' | 'crema' | 'oliva' | 'bosque' | 'gold' | 'terracota' | 'magenta' | 'light' | 'muted' | 'dark' | 'inherit';
 export type TypographyWeight = 'light' | 'normal' | 'medium' | 'semibold' | 'bold';
 
 export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {

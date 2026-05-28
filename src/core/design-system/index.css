@@ -3,19 +3,19 @@
 
 :root {
   /* Paleta cromática Aurea Elizabeth - Lujo Terrenal Cálido y Acogedor */
-  --color-tierra-profunda: #F7F4F0; /* Fondo (60%) - Lino / Hueso suave y luminoso */
-  --color-arena-tostada: #EADEC9; /* Marrón arena claro de contraste intermedio */
-  --color-crema-calido: #FAF6EE; /* Crema lino marfil cálido */
-  --color-oliva-salvia: #A36B4E; /* Botones / CTA - Bronce / Teja cálido y orgánico */
-  --color-bosque-suave: #87543A; /* Hover de acción - Bronce profundo / teja quemada */
-  --color-dorado-mate: #C5A059; /* Detalles y Logo (10%) - Dorado Aurea sutil */
-  --color-terracota-suave: #B27B62; /* Arcilla terracota suave terrenal secundario */
-  --color-magenta-oscuro: #8A004F; /* Acento magenta oscuro vibrante */
+  --color-tierra-profunda: #E5D9C4; /* Fondo (60%) - La base de arena y lino que ancla tu respiración */
+  --color-arena-tostada: #D5C8B4; /* Marrón arena - La calidez orgánica de las texturas que nos sostienen */
+  --color-crema-calido: #F5EFE4; /* Crema lino marfil - La luz tenue que invita a respirar con tranquilidad */
+  --color-oliva-salvia: #4F5E4C; /* Botones / CTA - La conexión botánica que restaura el flujo vital */
+  --color-bosque-suave: #343F32; /* Hover de acción - La sabiduría y quietud de los espacios inexplorados */
+  --color-dorado-mate: #B08E62; /* Detalles y Logo (10%) - El brillo sutil de los detalles que importan */
+  --color-terracota-suave: #9E6252; /* Arcilla terracota - El fuego lento que reconforta el alma cansada */
+  --color-magenta-oscuro: #8A004F; /* Acento magenta - Un acento vibrante de vitalidad y misterio profundo */
 
   /* Mapeo funcional del sistema */
   --color-bg-main: var(--color-tierra-profunda);
   --color-bg-card: #FFFFFF; /* Blanco puro para destacar elevación sobre el fondo lino */
-  --color-text-light: #F7F4F0; /* Texto lino sobre fondos oscuros (ej. botones bronce) */
+  --color-text-light: var(--color-crema-calido); /* Texto lino claro sobre fondos oscuros */
   --color-text-dark: #3D2E28; /* Marrón Espresso profundo para tipografía de máxima legibilidad */
   --color-accent: var(--color-oliva-salvia);
   --color-accent-hover: var(--color-bosque-suave);
@@ -186,10 +186,16 @@ html, body {
 }
 
 /* Colors */
+.color-tierra { color: var(--color-tierra-profunda); }
+.color-arena { color: var(--color-arena-tostada); }
+.color-crema { color: var(--color-crema-calido); }
+.color-oliva { color: var(--color-oliva-salvia); }
+.color-bosque { color: var(--color-bosque-suave); }
+.color-gold { color: var(--color-dorado-mate); }
+.color-terracota { color: var(--color-terracota-suave); }
+.color-magenta { color: var(--color-magenta-oscuro); }
 .color-light { color: var(--color-text-light); }
 .color-muted { color: var(--color-text-muted); }
-.color-gold { color: var(--color-gold); }
-.color-terracota { color: var(--color-terracota); }
 .color-dark { color: var(--color-text-dark); }
 .color-inherit { color: inherit; }
 
@@ -268,21 +274,39 @@ a:hover {
   transform: scale(0.96) translateY(0);
 }
 
-/* Magenta Button (now styled with Terracota Suave) */
+/* Magenta Button (actual magenta oscuro) */
 .btn-magenta {
-  background-color: var(--color-terracota-suave);
-  color: var(--color-tierra-profunda);
+  background-color: var(--color-magenta-oscuro);
+  color: var(--color-crema-calido);
   border: 1px solid transparent;
-  box-shadow: 0 8px 20px rgba(178, 123, 98, 0.15);
+  box-shadow: 0 8px 20px rgba(138, 0, 79, 0.15);
 }
 
 .btn-magenta:hover:not(:disabled) {
-  background-color: #9E6252;
+  background-color: #6D003E; /* Magenta aún más oscuro */
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(178, 123, 98, 0.28);
+  box-shadow: 0 12px 24px rgba(138, 0, 79, 0.28);
 }
 
 .btn-magenta:active:not(:disabled) {
+  transform: scale(0.96) translateY(0);
+}
+
+/* Terracota Button */
+.btn-terracota {
+  background-color: var(--color-terracota-suave);
+  color: var(--color-crema-calido);
+  border: 1px solid transparent;
+  box-shadow: 0 8px 20px rgba(158, 98, 82, 0.15);
+}
+
+.btn-terracota:hover:not(:disabled) {
+  background-color: #834F41;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(158, 98, 82, 0.28);
+}
+
+.btn-terracota:active:not(:disabled) {
   transform: scale(0.96) translateY(0);
 }
 

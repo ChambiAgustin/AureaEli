@@ -133,6 +133,11 @@ function App() {
     }, 3000);
   };
 
+  // Scroll to top automatically when activeTab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab]);
+
   // Load User Profile and orders on mount
   useEffect(() => {
     const loadAppData = async () => {
@@ -412,7 +417,38 @@ function App() {
         }}>
           {/* Columna 1: Logotipo, Slogan e Intención */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <img src={logoImg} alt="Aurea Elizabeth Logo" style={{ height: '48px', width: 'auto', alignSelf: 'flex-start', filter: 'brightness(1.05)' }} />
+            <div style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignSelf: 'flex-start',
+              padding: '10px 0'
+            }}>
+              {/* Resplandor radial de alta gama integrado sin bordes rígidos */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '180px',
+                height: '180px',
+                background: 'radial-gradient(circle, rgba(245, 239, 228, 0.1) 0%, rgba(176, 142, 98, 0.03) 45%, transparent 75%)',
+                borderRadius: '50%',
+                pointerEvents: 'none',
+                filter: 'blur(8px)',
+                zIndex: 0
+              }} />
+              <img
+                src={logoImg}
+                alt="Aurea Elizabeth Logo"
+                style={{
+                  height: '42px',
+                  width: 'auto',
+                  position: 'relative',
+                  zIndex: 1,
+                  filter: 'brightness(1.05) drop-shadow(0 2px 10px rgba(245, 239, 228, 0.12))'
+                }}
+              />
+            </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: '1.6', marginTop: '10px' }}>
               “El bienestar no es una meta distante; es la decisión consciente de respirar con intención en este preciso instante.”
             </p>
@@ -433,8 +469,20 @@ function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <Typography variant="caption" color="gold" weight="bold">Contacto Álmico</Typography>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              <span>Salta, Argentina</span>
-              <span>✉️ almas@aureaelizabeth.com</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', flexShrink: 0, opacity: 0.75 }}>
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span>Salta, Argentina</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', flexShrink: 0, opacity: 0.75 }}>
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                <span>almas@aureaelizabeth.com</span>
+              </div>
               <a
                 href="https://wa.me/5493875218180"
                 target="_blank"
@@ -442,12 +490,40 @@ function App() {
                 style={{
                   color: 'var(--color-text-muted)',
                   textDecoration: 'none',
-                  transition: 'color 0.3s ease'
+                  transition: 'color 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-dorado-mate)'}
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
               >
-                📞 +54 9 3875 21-8180 (WhatsApp Directo)
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ display: 'inline-block', flexShrink: 0 }}>
+                  <path d="M12.004 2c-5.51 0-9.993 4.483-9.993 9.993 0 1.763.457 3.49 1.328 5.02L2 22l5.163-1.355c1.48.807 3.148 1.233 4.838 1.234h.005c5.508 0 9.99-4.483 9.99-9.994C21.996 6.483 17.513 2 12.004 2zm5.725 13.916c-.244.687-1.42 1.309-1.954 1.393-.473.074-.93.125-3.036-.757-2.693-1.127-4.42-3.87-4.555-4.053-.134-.183-1.102-1.467-1.102-2.799 0-1.332.695-1.986.945-2.247.25-.262.545-.327.728-.327.182 0 .364.001.52.01.162.008.38-.06.595.46.223.54.76 1.85.826 1.983.067.133.11.288.02.469-.09.18-.135.3-.27.458-.137.16-.288.356-.412.478-.137.133-.28.278-.12.553.16.275.71 1.171 1.522 1.895.666.593 1.228.97 1.524 1.117.296.147.467.123.642-.08.175-.203.76-.882.964-1.184.204-.302.408-.252.687-.15.28.102 1.77.834 2.073.987.303.153.504.229.577.354.073.126.073.729-.17 1.417z"/>
+                </svg>
+                <span>+54 9 3875 21-8180</span>
+              </a>
+              <a
+                href="https://instagram.com/aurea.elizabeth"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: 'var(--color-text-muted)',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-dorado-mate)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', flexShrink: 0 }}>
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+                <span>@aurea.elizabeth</span>
               </a>
               <span style={{ fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--color-dorado-mate)' }}>"Lunes a Viernes a ritmo lento y pausado"</span>
             </div>
