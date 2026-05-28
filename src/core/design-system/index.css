@@ -10,6 +10,7 @@
   --color-bosque-suave: #87543A; /* Hover de acción - Bronce profundo / teja quemada */
   --color-dorado-mate: #C5A059; /* Detalles y Logo (10%) - Dorado Aurea sutil */
   --color-terracota-suave: #B27B62; /* Arcilla terracota suave terrenal secundario */
+  --color-magenta-oscuro: #8A004F; /* Acento magenta oscuro vibrante */
 
   /* Mapeo funcional del sistema */
   --color-bg-main: var(--color-tierra-profunda);
@@ -267,6 +268,44 @@ a:hover {
   transform: scale(0.96) translateY(0);
 }
 
+/* Magenta Button (now styled with Terracota Suave) */
+.btn-magenta {
+  background-color: var(--color-terracota-suave);
+  color: var(--color-tierra-profunda);
+  border: 1px solid transparent;
+  box-shadow: 0 8px 20px rgba(178, 123, 98, 0.15);
+}
+
+.btn-magenta:hover:not(:disabled) {
+  background-color: #9E6252;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(178, 123, 98, 0.28);
+}
+
+.btn-magenta:active:not(:disabled) {
+  transform: scale(0.96) translateY(0);
+}
+
+/* Terracota Outline Button */
+.btn-terracota-outline {
+  background-color: transparent;
+  color: var(--color-terracota-suave);
+  border: 1px solid var(--color-terracota-suave);
+  box-shadow: none;
+}
+
+.btn-terracota-outline:hover:not(:disabled) {
+  background-color: rgba(178, 123, 98, 0.06);
+  border-color: #9E6252;
+  color: #9E6252;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(178, 123, 98, 0.12);
+}
+
+.btn-terracota-outline:active:not(:disabled) {
+  transform: scale(0.96) translateY(0);
+}
+
 /* Button Sizes */
 .btn-sm {
   padding: 8px 18px;
@@ -391,7 +430,7 @@ a:hover {
 }
 
 .breathing-circle.inhale {
-  transform: scale(1.45);
+  transform: scale(1.2);
   box-shadow: 0 0 70px rgba(197, 168, 128, 0.6);
   background: radial-gradient(circle, var(--color-dorado-mate) 0%, var(--color-oliva-salvia) 100%);
 }
@@ -421,5 +460,100 @@ a:hover {
 @media (max-width: 768px) {
   .hide-on-mobile {
     display: none !important;
+  }
+  .container {
+    padding: 24px 16px;
+  }
+}
+
+/* Clases de utilidad responsivas nativas para Aurea Elizabeth */
+.flex-responsive {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .flex-responsive {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid-responsive-2 {
+    grid-template-columns: 1fr 1.1fr;
+    gap: 32px;
+  }
+}
+
+.grid-responsive-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid-responsive-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+}
+
+.grid-responsive-profile {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid-responsive-profile {
+    grid-template-columns: 1fr 1.3fr;
+    gap: 32px;
+  }
+}
+
+.grid-responsive-half {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .grid-responsive-half {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.mobile-scroll-x {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+.grid-responsive-ritual {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 992px) {
+  .grid-responsive-ritual {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 40px;
   }
 }

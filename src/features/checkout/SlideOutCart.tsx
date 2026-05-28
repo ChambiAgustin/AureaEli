@@ -73,7 +73,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ShoppingCart size={20} color="var(--color-dorado-mate)" />
-            <Typography variant="h3" style={{ fontSize: '1.4rem' }}>Tu Altar Sagrado</Typography>
+            <Typography variant="h3" color="light" style={{ fontSize: '1.4rem' }}>Tu Altar Sagrado</Typography>
           </div>
           <button
             onClick={onClose}
@@ -108,12 +108,12 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
           {cartItems.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', textAlign: 'center', padding: '0 20px' }}>
               <ShoppingCart size={48} color="var(--color-dorado-mate)" style={{ opacity: 0.4, marginBottom: '16px' }} />
-              <Typography variant="h3" style={{ fontSize: '1.2rem', marginBottom: '8px' }}>El altar está vacío</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.85rem', marginBottom: '20px' }}>
-                Aún no has incorporado brumas ancestrales ni rituales botánicos a tu práctica.
+              <Typography variant="h3" color="light" style={{ fontSize: '1.2rem', marginBottom: '8px' }}>El carrito está vacío</Typography>
+              <Typography variant="body-sm" style={{ fontSize: '0.85rem', marginBottom: '20px', color: 'rgba(247, 244, 240, 0.7)' }}>
+                Aún no has incorporado ningún producto al carrito.
               </Typography>
               <Button variant="primary" size="sm" onClick={onClose}>
-                Explorar Alquimias
+                Explorar Categorías
               </Button>
             </div>
           ) : (
@@ -129,6 +129,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                   border: '1px solid rgba(197, 168, 128, 0.1)',
                   borderRadius: '16px',
                   transition: 'transform 0.2s ease',
+                  color: 'var(--color-crema-calido)'
                 }}
               >
                 <img
@@ -147,7 +148,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                   <Typography variant="caption" color="gold" style={{ fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>
                     {item.product.category}
                   </Typography>
-                  <Typography variant="body" weight="medium" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Typography variant="body" color="light" weight="medium" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.product.name}
                   </Typography>
                   <Typography variant="body-sm" color="gold" style={{ marginTop: '2px', fontSize: '0.8rem' }}>
@@ -203,16 +204,16 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
         {cartItems.length > 0 && (
           <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(247, 244, 240, 0.7)' }}>
                 <span>Artículos en Altar</span>
-                <span>{totalItems}</span>
+                <span style={{ color: 'var(--color-crema-calido)' }}>{totalItems}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-muted)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(247, 244, 240, 0.7)' }}>
                 <span>Entrega Botánica</span>
                 <span style={{ color: 'var(--color-oliva-salvia)', fontWeight: 'bold' }}>Bonificada (Gratis)</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', marginTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: '8px' }}>
-                <Typography variant="body" weight="medium">Aporte Total</Typography>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', marginTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: '8px', color: 'var(--color-crema-calido)' }}>
+                <Typography variant="body" color="light" weight="medium">Aporte Total</Typography>
                 <span style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', fontFamily: 'var(--font-sans)' }}>
                   ${totalCart.toLocaleString('es-AR')}
                 </span>

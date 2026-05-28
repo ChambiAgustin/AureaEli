@@ -5,7 +5,7 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import ProductDetail from './ProductDetail';
-import { Search, Heart, SlidersHorizontal, ShoppingCart, Eye, Sparkles, RefreshCw } from 'lucide-react';
+import { Search, Heart, SlidersHorizontal, ShoppingCart, Eye, Sparkles, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CatalogPageProps {
   onAddToCart: (product: Product) => void;
@@ -27,6 +27,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 9;
 
   // Normalize initialCategory when passed from outside
   useEffect(() => {
@@ -41,7 +43,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     }
   }, [initialCategory]);
   const [selectedAroma, setSelectedAroma] = useState<string>('Todos');
-  const [maxPrice, setMaxPrice] = useState<number>(20000);
+  const [maxPrice, setMaxPrice] = useState<number>(30000);
   const [showNewOnly, setShowNewOnly] = useState<boolean>(false);
   const [showFeaturedOnly, setShowFeaturedOnly] = useState<boolean>(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
@@ -89,6 +91,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     // Category filter
     if (selectedCategory !== 'Todos') {
       result = result.filter((p) => {
+        if (selectedCategory === 'Favoritos') return favorites.includes(p.id);
         if (selectedCategory === 'Aromaterapia') return p.category === 'Aromaterapia';
         if (selectedCategory === 'Spa') return p.category === 'Bienestar y Spa';
         if (selectedCategory === 'Hogar') return p.category === 'Hogar con intención';
@@ -137,6 +140,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     setFilteredProducts(result);
   }, [products, searchTerm, selectedCategory, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly]);
+
   const categories = ['Todos', 'Aromaterapia', 'Spa', 'Hogar', 'Moda', 'Kits'];
   const aromas = ['Todos', 'Copal', 'Eucalipto', 'Menta', 'Rosas', 'Madera'];
 
@@ -144,7 +152,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     setSearchTerm('');
     setSelectedCategory('Todos');
     setSelectedAroma('Todos');
-    setMaxPrice(20000);
+    setMaxPrice(30000);
     setShowNewOnly(false);
     setShowFeaturedOnly(false);
   };
@@ -178,17 +186,19 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         flexDirection: 'column',
         gap: '16px'
       }}>
-        <div style={{
+        <div className="catalog-actions-container" style={{
           display: 'flex',
           gap: '12px',
-          width: '100%'
+          width: '100%',
+          flexWrap: 'wrap'
         }}>
           {/* Barra de búsqueda minimalista */}
           <div style={{
             position: 'relative',
             flex: 1,
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            minWidth: '260px'
           }}>
             <Search 
               size={18} 
@@ -207,10 +217,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               style={{
                 width: '100%',
                 padding: '14px 16px 14px 48px',
-                backgroundColor: 'rgba(35, 31, 28, 0.6)',
-                border: '1px solid rgba(197, 168, 128, 0.2)',
+                backgroundColor: 'rgba(35, 31, 28, 0.04)',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
                 borderRadius: '16px',
-                color: 'var(--color-crema-calido)',
+                color: 'var(--color-text-dark)',
                 fontFamily: 'var(--font-sans)',
                 fontSize: '0.9rem',
                 outline: 'none',
@@ -221,11 +231,30 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 e.target.style.boxShadow = '0 0 15px rgba(197, 168, 128, 0.15)';
               }}
               onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(197, 168, 128, 0.2)';
+                e.target.style.borderColor = 'rgba(197, 168, 128, 0.25)';
                 e.target.style.boxShadow = 'none';
               }}
             />
           </div>
+
+          {/* Botón de ver Favoritos (Sección de Intenciones) */}
+          <Button
+            variant={selectedCategory === 'Favoritos' ? 'primary' : 'secondary'}
+            onClick={() => setSelectedCategory(selectedCategory === 'Favoritos' ? 'Todos' : 'Favoritos')}
+            style={{
+              padding: '14px 20px',
+              borderRadius: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: selectedCategory === 'Favoritos' ? 'var(--color-crema-calido)' : 'var(--color-text-dark)',
+              borderColor: selectedCategory === 'Favoritos' ? 'var(--color-terracota-suave)' : 'var(--color-dorado-mate)',
+              backgroundColor: selectedCategory === 'Favoritos' ? 'var(--color-terracota-suave)' : 'rgba(44, 36, 32, 0.04)',
+            }}
+          >
+            <Heart size={16} fill={selectedCategory === 'Favoritos' ? 'var(--color-crema-calido)' : 'none'} color={selectedCategory === 'Favoritos' ? 'var(--color-crema-calido)' : 'var(--color-terracota-suave)'} />
+            <span>Favoritos ({favorites.length})</span>
+          </Button>
 
           {/* Toggle de filtros avanzados */}
           <Button
@@ -237,22 +266,19 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              border: showAdvancedFilters ? '1px solid var(--color-crema-calido)' : '1px solid var(--color-dorado-mate)'
+              color: 'var(--color-text-dark)',
+              borderColor: showAdvancedFilters ? 'var(--color-text-dark)' : 'var(--color-dorado-mate)',
+              backgroundColor: 'rgba(44, 36, 32, 0.04)',
             }}
           >
             <SlidersHorizontal size={16} />
-            <span className="hide-on-mobile">Filtros</span>
+            <span>Filtros</span>
           </Button>
         </div>
 
         {/* Filtros de Categoría Rápidos (Scroll horizontal en mobile) */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          paddingBottom: '8px',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch'
+        <div className="mobile-scroll-x" style={{
+          paddingBottom: '8px'
         }}>
           {categories.map((cat) => (
             <button
@@ -343,7 +369,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <input
                   type="range"
                   min="2000"
-                  max="20000"
+                  max="30000"
                   step="500"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -358,7 +384,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
                   <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>$2.000</span>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>$20.000</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>$30.000</span>
                 </div>
               </div>
 
@@ -459,23 +485,31 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             </Button>
           </div>
         ) : (
-          /* Render de Tarjetas de Productos */
-          <div className="grid-3">
-            {filteredProducts.map((product) => {
-              const isFav = favorites.includes(product.id);
-              
-              return (
-                <Card 
-                  key={product.id}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: '440px',
-                    padding: '20px',
-                    position: 'relative'
-                  }}
-                >
+          /* Render de Tarjetas de Productos Paginados */
+          (() => {
+            const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+            const indexOfLastProduct = currentPage * itemsPerPage;
+            const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+            const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+            return (
+              <>
+                <div className="grid-3">
+                  {currentProducts.map((product) => {
+                    const isFav = favorites.includes(product.id);
+                    
+                    return (
+                      <Card 
+                        key={product.id}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          minHeight: '440px',
+                          padding: '20px',
+                          position: 'relative'
+                        }}
+                      >
                   {/* Favorito Button Floater */}
                   <button
                     onClick={(e) => {
@@ -646,7 +680,27 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                         variant="secondary"
                         size="sm"
                         onClick={() => setSelectedProduct(product)}
-                        style={{ padding: '8px 12px', borderRadius: '12px' }}
+                        style={{ 
+                          padding: '8px 12px', 
+                          borderRadius: '12px',
+                          color: 'var(--color-text-dark)',
+                          borderColor: 'rgba(197, 160, 89, 0.35)',
+                          backgroundColor: 'rgba(44, 36, 32, 0.04)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = 'var(--color-dorado-mate)';
+                          e.currentTarget.style.borderColor = 'var(--color-dorado-mate)';
+                          e.currentTarget.style.backgroundColor = 'rgba(44, 36, 32, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = 'var(--color-text-dark)';
+                          e.currentTarget.style.borderColor = 'rgba(197, 160, 89, 0.35)';
+                          e.currentTarget.style.backgroundColor = 'rgba(44, 36, 32, 0.04)';
+                        }}
                       >
                         <Eye size={15} />
                       </Button>
@@ -669,9 +723,94 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     </div>
                   </div>
                 </Card>
-              );
-            })}
-          </div>
+                    );
+                  })}
+                </div>
+
+                {/* Controles de Paginación Premium */}
+                {totalPages > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '16px',
+                    marginTop: '48px',
+                    fontFamily: 'var(--font-sans)',
+                  }}>
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      style={{
+                        background: 'rgba(44, 36, 32, 0.04)',
+                        border: '1px solid rgba(176, 142, 98, 0.25)',
+                        color: currentPage === 1 ? 'rgba(0, 0, 0, 0.2)' : 'var(--color-text-dark)',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s ease',
+                        opacity: currentPage === 1 ? 0.4 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage > 1) {
+                          e.currentTarget.style.borderColor = 'var(--color-dorado-mate)';
+                          e.currentTarget.style.background = 'rgba(44, 36, 32, 0.08)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage > 1) {
+                          e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.25)';
+                          e.currentTarget.style.background = 'rgba(44, 36, 32, 0.04)';
+                        }
+                      }}
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+
+                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-dark)', fontWeight: '500' }}>
+                      Página {currentPage} de {totalPages}
+                    </span>
+
+                    <button
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      style={{
+                        background: 'rgba(44, 36, 32, 0.04)',
+                        border: '1px solid rgba(176, 142, 98, 0.25)',
+                        color: currentPage === totalPages ? 'rgba(0, 0, 0, 0.2)' : 'var(--color-text-dark)',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.3s ease',
+                        opacity: currentPage === totalPages ? 0.4 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentPage < totalPages) {
+                          e.currentTarget.style.borderColor = 'var(--color-dorado-mate)';
+                          e.currentTarget.style.background = 'rgba(44, 36, 32, 0.08)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentPage < totalPages) {
+                          e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.25)';
+                          e.currentTarget.style.background = 'rgba(44, 36, 32, 0.04)';
+                        }
+                      }}
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()
         )}
       </div>
 
@@ -694,6 +833,20 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           }
           50% {
             opacity: 0.2;
+          }
+        }
+
+        /* Responsive Overrides for Catalog */
+        @media (max-width: 767px) {
+          .catalog-actions-container {
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+          .catalog-actions-container > button,
+          .catalog-actions-container > div {
+            width: 100% !important;
+            flex: none !important;
+            min-width: 0 !important;
           }
         }
       `}</style>

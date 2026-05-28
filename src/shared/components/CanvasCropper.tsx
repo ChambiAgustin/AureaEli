@@ -314,7 +314,7 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
 
           <div style={styles.buttonRow}>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => {
                 setImage(null);
                 setScale(1.0);
@@ -327,7 +327,7 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
             
             <div style={styles.actionRight}>
               {onCancel && (
-                <Button variant="outline" onClick={onCancel} style={{ marginRight: '10px' }}>
+                <Button variant="secondary" onClick={onCancel} style={{ marginRight: '10px' }}>
                   Cancelar
                 </Button>
               )}

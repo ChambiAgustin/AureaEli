@@ -310,7 +310,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       </div>
 
       {/* Dashboard de métricas premium */}
-      <div className="grid-3" style={styles.metricsGrid}>
+      <div className="grid-3 admin-metrics-grid" style={styles.metricsGrid}>
         <Card style={{ ...styles.metricCard, background: 'rgba(110, 126, 107, 0.08)' }}>
           <div style={styles.metricHeader}>
             <Typography variant="caption" color="gold" style={styles.metricLabel}>Alquimias en Altar</Typography>
@@ -342,8 +342,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       {/* Alertas de Stock */}
       {lowStockProducts.length > 0 && (
         <div style={styles.alertBar}>
-          <AlertTriangle size={18} color="#c28b78" style={{ marginRight: '12px', flexShrink: 0 }} />
-          <Typography variant="body" style={{ fontSize: '0.88rem', color: '#c28b78' }}>
+          <AlertTriangle size={18} color="#A34C37" style={{ marginRight: '12px', flexShrink: 0 }} />
+          <Typography variant="body" style={{ fontSize: '0.88rem', color: '#A34C37' }}>
             <strong>Alerta de Altar:</strong> Hay {lowStockProducts.length} productos bajo stock ideal (&lt; 12 unidades). Recomendamos renovar insumos: {lowStockProducts.map(p => p.name).join(', ')}.
           </Typography>
         </div>
@@ -351,7 +351,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
       {/* Panel Principal */}
       <div className="glass-panel" style={styles.mainPanel}>
-        <div style={styles.panelHeader}>
+        <div className="admin-panel-header" style={styles.panelHeader}>
           <Typography variant="h3" style={{ fontFamily: 'Playfair Display, serif' }}>
             Inventario de Alquimias
           </Typography>
@@ -422,7 +422,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                       <td style={styles.td}>
                         <span style={{ 
                           ...styles.stockText,
-                          color: isLow ? '#c28b78' : 'var(--color-crema-calido)',
+                          color: isLow ? '#A34C37' : 'var(--color-text-dark)',
                           fontWeight: isLow ? 'bold' : 'normal'
                         }}>
                           {product.stock} u.
@@ -715,7 +715,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               <div style={styles.formActions}>
                 <Button 
                   type="button" 
-                  variant="outline" 
+                  variant="secondary" 
                   onClick={() => setIsFormOpen(false)}
                   style={{ marginRight: '12px' }}
                 >
@@ -732,6 +732,30 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         </div>
       )}
 
+      <style>{`
+        @media (max-width: 767px) {
+          .admin-page-container table {
+            min-width: 750px !important;
+          }
+          .admin-metrics-grid {
+            gap: 16px !important;
+            margin-bottom: 24px !important;
+          }
+          .admin-panel-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 14px !important;
+          }
+          .admin-panel-header button {
+            width: 100% !important;
+          }
+          .admin-page-container select,
+          .admin-page-container input,
+          .admin-page-container textarea {
+            font-size: 16px !important; /* Prevents auto-zoom on iOS devices */
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -827,12 +851,12 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: '32px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+    borderBottom: '1px solid rgba(176, 142, 98, 0.15)',
     paddingBottom: '20px',
   },
   logoutBtn: {
-    borderColor: 'rgba(194, 139, 120, 0.3)',
-    color: '#c28b78',
+    borderColor: 'rgba(135, 84, 58, 0.35)',
+    color: 'var(--color-bosque-suave)',
     fontSize: '0.8rem',
   },
   metricsGrid: {
@@ -843,7 +867,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.03)',
+    border: '1px solid rgba(176, 142, 98, 0.12)',
   },
   metricHeader: {
     display: 'flex',
@@ -864,13 +888,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   metricSub: {
     fontSize: '0.78rem',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'var(--color-text-muted)',
   },
   alertBar: {
     display: 'flex',
     alignItems: 'center',
-    background: 'rgba(194, 139, 120, 0.1)',
-    border: '1px solid rgba(194, 139, 120, 0.25)',
+    background: 'rgba(163, 76, 55, 0.08)',
+    border: '1px solid rgba(163, 76, 55, 0.25)',
     padding: '14px 20px',
     borderRadius: '12px',
     marginBottom: '32px',
@@ -878,7 +902,7 @@ const styles: Record<string, React.CSSProperties> = {
   mainPanel: {
     padding: '28px',
     borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(176, 142, 98, 0.18)',
   },
   panelHeader: {
     display: 'flex',
@@ -923,18 +947,18 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'left',
   },
   tableHeadRow: {
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    borderBottom: '1px solid rgba(61, 46, 40, 0.15)',
   },
   th: {
     padding: '12px 16px',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'var(--color-text-muted)',
     fontSize: '0.78rem',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '1px',
   },
   tableRow: {
-    borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+    borderBottom: '1px solid rgba(61, 46, 40, 0.08)',
     transition: 'background 0.2s ease',
   },
   td: {
@@ -951,13 +975,13 @@ const styles: Record<string, React.CSSProperties> = {
     height: '54px',
     borderRadius: '8px',
     objectFit: 'cover',
-    border: '1px solid rgba(255,255,255,0.08)',
+    border: '1px solid rgba(176, 142, 98, 0.25)',
     backgroundColor: '#1b171f',
   },
   productName: {
     fontWeight: 600,
     fontSize: '0.92rem',
-    color: '#fff',
+    color: 'var(--color-text-dark)',
     display: 'block',
     marginBottom: '4px',
   },
@@ -966,20 +990,20 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
   },
   featuredBadge: {
-    backgroundColor: 'rgba(197, 168, 128, 0.15)',
-    color: '#c5a880',
+    backgroundColor: 'rgba(163, 107, 78, 0.08)',
+    color: 'var(--color-bosque-suave)',
     fontSize: '0.65rem',
     padding: '2px 6px',
     borderRadius: '4px',
-    border: '1px solid rgba(197,168,128,0.25)',
+    border: '1px solid rgba(163, 107, 78, 0.25)',
   },
   newBadge: {
-    backgroundColor: 'rgba(110, 126, 107, 0.15)',
-    color: '#8da689',
+    backgroundColor: 'rgba(110, 126, 107, 0.12)',
+    color: '#4E5E4C',
     fontSize: '0.65rem',
     padding: '2px 6px',
     borderRadius: '4px',
-    border: '1px solid rgba(110,126,107,0.25)',
+    border: '1px solid rgba(110, 126, 107, 0.3)',
   },
   categoryCell: {
     display: 'flex',
@@ -987,16 +1011,16 @@ const styles: Record<string, React.CSSProperties> = {
   },
   catText: {
     fontSize: '0.85rem',
-    color: '#fff',
+    color: 'var(--color-text-dark)',
   },
   subcatText: {
     fontSize: '0.75rem',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'var(--color-text-muted)',
   },
   priceText: {
     fontWeight: 600,
     fontSize: '0.9rem',
-    color: '#d4af37',
+    color: 'var(--color-text-dark)',
   },
   stockText: {
     fontSize: '0.85rem',
@@ -1008,12 +1032,12 @@ const styles: Record<string, React.CSSProperties> = {
     width: '6px',
     height: '6px',
     borderRadius: '50%',
-    backgroundColor: '#c28b78',
-    boxShadow: '0 0 8px #c28b78',
+    backgroundColor: '#A34C37',
+    boxShadow: '0 0 8px #A34C37',
   },
   detailsText: {
     fontSize: '0.8rem',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'var(--color-text-muted)',
   },
   actionsContainer: {
     display: 'flex',
@@ -1021,18 +1045,18 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '10px',
   },
   actionBtnEdit: {
-    backgroundColor: 'rgba(197, 168, 128, 0.1)',
-    border: '1px solid rgba(197, 168, 128, 0.2)',
-    color: '#c5a880',
+    backgroundColor: 'rgba(163, 107, 78, 0.08)',
+    border: '1px solid rgba(163, 107, 78, 0.22)',
+    color: 'var(--color-oliva-salvia)',
     padding: '8px',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   actionBtnDelete: {
-    backgroundColor: 'rgba(194, 139, 120, 0.1)',
-    border: '1px solid rgba(194, 139, 120, 0.2)',
-    color: '#c28b78',
+    backgroundColor: 'rgba(135, 84, 58, 0.08)',
+    border: '1px solid rgba(135, 84, 58, 0.22)',
+    color: 'var(--color-bosque-suave)',
     padding: '8px',
     borderRadius: '8px',
     cursor: 'pointer',

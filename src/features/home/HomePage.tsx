@@ -5,16 +5,16 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import logoAureaImg from '../../assets/logo-aurea.png';
-import { 
-  ShieldCheck, 
-  HeartHandshake, 
-  Compass, 
-  ChevronLeft, 
-  ChevronRight, 
-  Star, 
-  Sparkles, 
-  ArrowRight, 
-  Play, 
+import {
+  ShieldCheck,
+  HeartHandshake,
+  Compass,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Sparkles,
+  ArrowRight,
+  Play,
   Pause,
   Clock,
   HelpCircle,
@@ -92,7 +92,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
   // Breathing Guide Loop (Inhale 4s -> Hold 4s -> Exhale 4s)
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
+    let timer: any = null;
     if (breathActive) {
       timer = setInterval(() => {
         setBreathSeconds((prev) => {
@@ -206,9 +206,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
   return (
     <div className="home-silent-seller" style={{ color: 'var(--color-text-dark)', overflowX: 'hidden' }}>
-      
+
       {/* 1. HERO SENSORIAL CON HUMO DE SAHUMERIO */}
-      <section 
+      <section
         className="hero-container"
         style={{
           position: 'relative',
@@ -291,65 +291,82 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
         }} />
 
         <div className="container" style={{ position: 'relative', zIndex: 3, padding: '40px 24px' }}>
-          
-          {/* Geometría Sagrada Orbital de Fondo */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(95vw, 680px)',
-            height: 'min(95vw, 680px)',
-            borderRadius: '50%',
-            border: '1px dashed rgba(197, 160, 89, 0.16)',
-            animation: 'spin 180s linear infinite',
-            pointerEvents: 'none',
-            zIndex: 0
-          }} />
 
           {/* Contenedor del Hero Centrado de Lujo */}
-          <div 
-            className="reveal-on-scroll active" 
-            style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              textAlign: 'center', 
-              gap: '20px', 
-              width: '100%', 
-              maxWidth: '820px', 
-              margin: '0 auto', 
+          <div
+            className="reveal-on-scroll active"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: '20px',
+              width: '100%',
+              maxWidth: '820px',
+              margin: '0 auto',
               zIndex: 10,
               position: 'relative'
             }}
           >
-            {/* Tag superior minimalista */}
-            <span style={{
-              fontFamily: 'var(--font-sans)',
-              textTransform: 'uppercase',
-              fontSize: '0.8rem',
-              letterSpacing: '0.2em',
-              color: 'var(--color-oliva-salvia)',
-              fontWeight: '600',
-              marginBottom: '10px'
+            {/* Contenedor del Círculo y del Logotipo + Tag */}
+            <div style={{
+              position: 'relative',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '60px 0',
+              zIndex: 1
             }}>
-              — Ritual y Pausa —
-            </span>
+              {/* Geometría Sagrada Orbital de Fondo */}
+              <div style={{
+                position: 'absolute',
+                top: '60%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 'min(95vw, 600px)',
+                height: 'min(95vw, 600px)',
+                borderRadius: '50%',
+                border: '1px dashed rgba(197, 160, 89, 0.16)',
+                animation: 'spin 180s linear infinite',
+                pointerEvents: 'none',
+                zIndex: 0
+              }} />
 
-            {/* Logo de la Marca en Gran Formato Amplio (Completo de Assets) */}
-            <img 
-              src={logoAureaImg} 
-              alt="Aurea Elizabeth Logo Completo" 
-              style={{ 
-                width: '100%',
-                maxWidth: '620px',
-                height: 'auto', 
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 24px rgba(44, 36, 32, 0.06))',
-                animation: 'pulseLogo 8s ease-in-out infinite',
-                margin: '10px 0'
-              }} 
-            />
+              {/* Tag superior minimalista */}
+              <span style={{
+                fontFamily: 'var(--font-sans)',
+                textTransform: 'uppercase',
+                fontSize: '0.8rem',
+                letterSpacing: '0.2em',
+                color: 'var(--color-magenta-oscuro)',
+                fontWeight: '600',
+                marginBottom: '10px',
+                zIndex: 1,
+                position: 'relative'
+              }}>
+                — Ritual y Pausa —
+              </span>
+
+              {/* Logo de la Marca en Gran Formato Amplio (Completo de Assets) */}
+              <img
+                src={logoAureaImg}
+                alt="Aurea Elizabeth Logo Completo"
+                style={{
+                  width: '100%',
+                  maxWidth: 'min(85vw, 380px)',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 4px 24px rgba(44, 36, 32, 0.06))',
+                  animation: 'pulseLogo 8s ease-in-out infinite',
+                  margin: '10px 0',
+                  zIndex: 1,
+                  position: 'relative'
+                }}
+              />
+
+            </div>
 
             {/* El Texto Poético Solicitado en Gran Formato Serif */}
             <p style={{
@@ -360,16 +377,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               color: 'var(--color-text-dark)',
               fontStyle: 'italic',
               maxWidth: '760px',
-              marginTop: '24px',
+              marginTop: '12px',
               letterSpacing: '0.02em'
             }}>
               “No vendemos objetos; te invitamos a fundar un oasis en tu cotidianidad. Nuestras alquimias están diseñadas con materias primas nobles y puras para desacelerar tu sistema nervioso y reconectarte con tu eje.”
             </p>
 
             {/* Los Botones Interactivos */}
-            <div style={{ display: 'flex', gap: '20px', marginTop: '32px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              <Button 
-                variant="primary" 
+            <div style={{ display: 'flex', gap: '20px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Button
+                variant="magenta"
                 size="lg"
                 onClick={() => onNavigate('rituals')}
                 style={{
@@ -381,15 +398,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 <span>Explorar rituales</span>
                 <ArrowRight size={16} />
               </Button>
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="terracota-outline"
                 size="lg"
                 onClick={() => onNavigate('catalog')}
               >
                 Ver colección
               </Button>
             </div>
-            
+
             <style>{`
               @keyframes pulseLogo {
                 0%, 100% { transform: scale(1); opacity: 0.95; }
@@ -401,7 +418,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
       </section>
 
       {/* 2. FAJA DE CONFIANZA POÉTICA */}
-      <section 
+      <section
         className="reveal-on-scroll"
         ref={addToRevealRefs}
         style={{
@@ -455,14 +472,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             <div style={{ width: '40px', height: '1px', backgroundColor: 'var(--color-dorado-mate)', margin: '16px auto' }} />
           </div>
 
-          <div style={{
+          <div className="categories-grid-container" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(6, 1fr)',
             gap: '20px',
             minHeight: '480px'
           }}>
             {/* 1. Aromaterapia (Col: 3, Row: 1) */}
-            <div 
+            <div
               className="card-premium card-premium-hover"
               onClick={() => onNavigate('catalog', 'Aromaterapia')}
               style={{
@@ -481,14 +498,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               }}
             >
               <Typography variant="caption" color="gold">Óleos & Brumas</Typography>
-              <Typography variant="h2" style={{ fontSize: '1.8rem', margin: '4px 0 8px' }}>Aromaterapia</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
+              <Typography variant="h2" color="light" style={{ fontSize: '1.8rem', margin: '4px 0 8px' }}>Aromaterapia</Typography>
+              <Typography variant="body-sm" color="light" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
                 Esencias puras prensadas en frío y brumas áuricas destiladas a mano.
               </Typography>
             </div>
 
             {/* 2. Bienestar y Spa (Col: 3, Row: 1) */}
-            <div 
+            <div
               className="card-premium card-premium-hover"
               onClick={() => onNavigate('catalog', 'Spa')}
               style={{
@@ -507,14 +524,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               }}
             >
               <Typography variant="caption" color="gold">Cuidado de Sí</Typography>
-              <Typography variant="h2" style={{ fontSize: '1.8rem', margin: '4px 0 8px' }}>Bienestar y Spa</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
+              <Typography variant="h2" color="light" style={{ fontSize: '1.8rem', margin: '4px 0 8px' }}>Bienestar y Spa</Typography>
+              <Typography variant="body-sm" color="light" style={{ fontSize: '0.85rem', maxWidth: '300px' }}>
                 Sales minerales, aceites de automasaje y arcillas purificadoras.
               </Typography>
             </div>
 
             {/* 3. Hogar con Intención (Col: 2) */}
-            <div 
+            <div
               className="card-premium card-premium-hover"
               onClick={() => onNavigate('catalog', 'Hogar')}
               style={{
@@ -533,14 +550,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               }}
             >
               <Typography variant="caption" color="gold">Altares de Calma</Typography>
-              <Typography variant="h3" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Hogar con Intención</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem' }}>
+              <Typography variant="h3" color="light" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Hogar con Intención</Typography>
+              <Typography variant="body-sm" color="light" style={{ fontSize: '0.78rem' }}>
                 Velas de soja, cerámicas y sahumerios de combustión lenta.
               </Typography>
             </div>
 
             {/* 4. Moda Consciente (Col: 2) */}
-            <div 
+            <div
               className="card-premium card-premium-hover"
               onClick={() => onNavigate('catalog', 'Moda')}
               style={{
@@ -559,14 +576,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               }}
             >
               <Typography variant="caption" color="gold">Lino & Algodón Orgánico</Typography>
-              <Typography variant="h3" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Moda Consciente</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem' }}>
+              <Typography variant="h3" color="light" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Moda Consciente</Typography>
+              <Typography variant="body-sm" color="light" style={{ fontSize: '0.78rem' }}>
                 Prendas holgadas tejidas con amor para habitar tu cuerpo en libertad.
               </Typography>
             </div>
 
             {/* 5. Kits y Regalos (Col: 2) */}
-            <div 
+            <div
               className="card-premium card-premium-hover"
               onClick={() => onNavigate('catalog', 'Kits')}
               style={{
@@ -585,8 +602,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               }}
             >
               <Typography variant="caption" color="gold">Cofres Sagrados</Typography>
-              <Typography variant="h3" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Kits y Regalos</Typography>
-              <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem' }}>
+              <Typography variant="h3" color="light" style={{ fontSize: '1.4rem', margin: '4px 0' }}>Kits y Regalos</Typography>
+              <Typography variant="body-sm" color="light" style={{ fontSize: '0.78rem' }}>
                 Combinaciones curadas para obsequiar calma, luz y sanación.
               </Typography>
             </div>
@@ -608,14 +625,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
           {loadingProducts ? (
             <div className="grid-3">
-              {[1,2,3].map(i => (
+              {[1, 2, 3].map(i => (
                 <div key={i} style={{ height: '380px', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '20px' }} />
               ))}
             </div>
           ) : (
             <div className="grid-3" style={{ gap: '28px' }}>
               {featuredProducts.map((product) => (
-                <div 
+                <div
                   key={product.id}
                   className="card-premium card-premium-hover"
                   style={{
@@ -631,8 +648,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   <div>
                     {/* Imagen del producto */}
                     <div style={{ height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px', position: 'relative' }}>
-                      <img 
-                        src={product.imageUrl} 
+                      <img
+                        src={product.imageUrl}
                         alt={product.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
@@ -657,8 +674,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                       <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Inversión en calma</span>
                       <Typography variant="h3" color="gold" style={{ fontSize: '1.15rem' }}>${product.price.toLocaleString('es-AR')}</Typography>
                     </div>
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="sm"
                       onClick={() => onAddToCart(product)}
                       style={{ borderRadius: '12px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -673,7 +690,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           )}
 
           <div style={{ textAlign: 'center', marginTop: '40px' }}>
-            <Button variant="secondary" onClick={() => onNavigate('catalog')}>
+            <Button variant="magenta" onClick={() => onNavigate('catalog')}>
               Ver toda la colección botánica
             </Button>
           </div>
@@ -681,7 +698,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
       </section>
 
       {/* 5. BLOQUE DE MANIFIESTO EMOCIONAL (ESCUDO CIRCULAR ZEN - VERDE BOTÁNICO Y ORO) */}
-      <section 
+      <section
         className="reveal-on-scroll"
         ref={addToRevealRefs}
         style={{
@@ -693,7 +710,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           width: '100%'
         }}
       >
-        <div 
+        <div
+          className="manifesto-circle"
           style={{
             width: 'min(90vw, 640px)',
             height: 'min(90vw, 640px)',
@@ -726,42 +744,61 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             animation: 'spin 120s linear infinite'
           }} />
 
-          <Typography variant="caption" style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', letterSpacing: '0.25em', fontSize: '0.75rem', marginBottom: '16px' }}>
+          <Typography
+            variant="caption"
+            className="manifesto-tag"
+            style={{
+              color: 'var(--color-dorado-mate)',
+              fontWeight: 'bold',
+              letterSpacing: '0.25em',
+              fontSize: 'clamp(0.6rem, 2vw, 0.75rem)',
+              marginBottom: '16px'
+            }}
+          >
             El Manifiesto Áurea
           </Typography>
-          
-          <h2 style={{
-            fontFamily: 'var(--font-serif)',
-            fontSize: 'clamp(1.15rem, 3.2vw, 1.85rem)',
-            fontWeight: 300,
-            lineHeight: '1.35',
-            margin: '0 0 20px',
-            color: '#F4DFB8', /* Oro champagne cálido y vibrante */
-            letterSpacing: '0.04em',
-            textShadow: '0 2px 10px rgba(210, 180, 140, 0.15)'
-          }}>
-            “Vivimos a una velocidad que no le pertenece al alma. <br />
-            Nuestra sagrada intención es invitarte a frenar, <br />
+
+          <h2
+            className="manifesto-title"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontSize: 'clamp(1.1rem, 3.2vw, 1.85rem)',
+              fontWeight: 300,
+              lineHeight: '1.35',
+              margin: '0 0 20px',
+              color: '#F4DFB8', /* Oro champagne cálido y vibrante */
+              letterSpacing: '0.04em',
+              textShadow: '0 2px 10px rgba(210, 180, 140, 0.15)'
+            }}
+          >
+            “Vivimos a una velocidad que no le pertenece al alma. <br className="hide-on-mobile" />
+            Nuestra sagrada intención es invitarte a frenar, <br className="hide-on-mobile" />
             encender un sahumerio y fundar tu espacio de paz.”
           </h2>
 
-          <div style={{
-            width: '40px',
-            height: '1px',
-            backgroundColor: 'var(--color-dorado-mate)',
-            opacity: 0.5,
-            margin: '0 auto 20px'
-          }} />
+          <div
+            className="manifesto-divider"
+            style={{
+              width: '40px',
+              height: '1px',
+              backgroundColor: 'var(--color-dorado-mate)',
+              opacity: 0.5,
+              margin: '0 auto 20px'
+            }}
+          />
 
-          <p style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 'clamp(0.78rem, 2vw, 0.95rem)',
-            lineHeight: '1.65',
-            color: '#E5DFD9', /* Crema lino pulido de alta legibilidad */
-            maxWidth: '480px',
-            margin: '0 auto',
-            fontWeight: 300
-          }}>
+          <p
+            className="manifesto-text"
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'clamp(0.75rem, 2vw, 0.95rem)',
+              lineHeight: '1.65',
+              color: '#E5DFD9', /* Crema lino pulido de alta legibilidad */
+              maxWidth: '480px',
+              margin: '0 auto',
+              fontWeight: 300
+            }}
+          >
             Aurea Elizabeth nació de la búsqueda honesta de calma y texturas nobles en un mundo ruidoso. Elegimos conscientemente cada extracto herbáceo, cada veta de lino y cada trazo de arcilla cocida a horno de leña. La compra no es el fin, es la puerta de entrada a tu ritual sagrado.
           </p>
         </div>
@@ -775,9 +812,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               <Typography variant="caption" color="gold">Testimoniales Sensoriales</Typography>
               <Typography variant="h2" style={{ marginTop: '8px' }}>Los Rituales más Elegidos</Typography>
             </div>
-            
+
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
+              <button
                 onClick={handlePrevCarousel}
                 style={{
                   background: 'rgba(44, 36, 32, 0.04)',
@@ -803,7 +840,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               >
                 <ChevronLeft size={20} />
               </button>
-              <button 
+              <button
                 onClick={handleNextCarousel}
                 style={{
                   background: 'rgba(44, 36, 32, 0.04)',
@@ -833,8 +870,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           </div>
 
           {/* Item de Carrusel Activo */}
-          <div 
-            className="glass-panel"
+          <div
+            className="glass-panel testimonial-carousel-panel"
             style={{
               padding: '40px',
               display: 'grid',
@@ -847,8 +884,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           >
             <div className="grid-2" style={{ alignItems: 'center', gap: '32px' }}>
               <div style={{ height: '280px', borderRadius: '16px', overflow: 'hidden' }}>
-                <img 
-                  src={bestSellers[activeCarouselIndex].imageUrl} 
+                <img
+                  src={bestSellers[activeCarouselIndex].imageUrl}
                   alt={bestSellers[activeCarouselIndex].name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
@@ -857,11 +894,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                   {[...Array(5)].map((_, i) => (
-                     <Star 
-                      key={i} 
-                      size={16} 
-                      color="var(--color-dorado-mate)" 
-                      fill={i < bestSellers[activeCarouselIndex].rating ? 'var(--color-dorado-mate)' : 'none'} 
+                    <Star
+                      key={i}
+                      size={16}
+                      color="var(--color-dorado-mate)"
+                      fill={i < bestSellers[activeCarouselIndex].rating ? 'var(--color-dorado-mate)' : 'none'}
                     />
                   ))}
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
@@ -871,7 +908,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
 
                 <Typography variant="caption" color="gold">{bestSellers[activeCarouselIndex].category}</Typography>
                 <Typography variant="h2" style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)' }}>{bestSellers[activeCarouselIndex].name}</Typography>
-                
+
                 <p style={{
                   fontFamily: 'var(--font-serif)',
                   fontSize: '1.25rem',
@@ -888,8 +925,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     size="sm"
                     onClick={async () => {
                       try {
@@ -911,32 +948,30 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Paginador visual de puntitos */}
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              gap: '8px'
-            }}>
-              {bestSellers.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveCarouselIndex(idx)}
-                  style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    border: 'none',
-                    backgroundColor: idx === activeCarouselIndex ? 'var(--color-dorado-mate)' : 'rgba(255, 255, 255, 0.15)',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.3s ease'
-                  }}
-                />
-              ))}
-            </div>
+          {/* Paginador visual de puntitos (ubicado abajo de la presentación) */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '10px',
+            marginTop: '24px'
+          }}>
+            {bestSellers.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveCarouselIndex(idx)}
+                style={{
+                  width: idx === activeCarouselIndex ? '24px' : '8px',
+                  height: '8px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  backgroundColor: idx === activeCarouselIndex ? 'var(--color-dorado-mate)' : 'rgba(61, 46, 40, 0.25)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -944,9 +979,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
       {/* 7. KIT DESTACADO: KIT DE CALMA NOCTURNA */}
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
         <div className="container" style={{ padding: '0 24px' }}>
-          <div className="glass-panel" style={{ padding: '48px', border: '1px solid rgba(197,168,128,0.25)', position: 'relative' }}>
+          <div className="glass-panel kit-nocturno-panel" style={{ padding: '48px', border: '1px solid rgba(197,168,128,0.25)', position: 'relative' }}>
             <div className="grid-2" style={{ alignItems: 'center', gap: '48px' }}>
-              
+
               {/* Lado izquierdo: Info del Kit e Interactividad de pasos */}
               <div>
                 <span style={{
@@ -967,7 +1002,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 <Typography variant="h2" style={{ fontSize: '2.4rem', marginTop: '12px', marginBottom: '16px' }}>
                   Kit de Calma Nocturna
                 </Typography>
-                
+
                 <p style={{
                   fontFamily: 'var(--font-sans)',
                   fontSize: '0.95rem',
@@ -981,7 +1016,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 {/* Steps Accordion / Tabs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px' }}>
                   {kitSteps.map((step, idx) => (
-                    <div 
+                    <div
                       key={step.step}
                       onClick={() => setActiveKitStep(idx)}
                       style={{
@@ -995,11 +1030,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '10px', 
-                          fontWeight: 'bold', 
+                        <span style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          fontWeight: 'bold',
                           fontSize: '0.9rem',
                           color: idx === activeKitStep ? 'var(--color-accent)' : 'var(--color-text-dark)'
                         }}>
@@ -1018,13 +1053,13 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                           </span>
                           {step.title}
                         </span>
-                        
+
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-dorado-mate)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Clock size={12} />
                           {step.duration}
                         </span>
                       </div>
-                      
+
                       {idx === activeKitStep && (
                         <p style={{
                           fontSize: '0.82rem',
@@ -1056,7 +1091,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   zIndex: 0,
                   filter: 'blur(15px)'
                 }} />
-                
+
                 <div style={{
                   borderRadius: '20px',
                   overflow: 'hidden',
@@ -1065,8 +1100,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   boxShadow: '0 15px 40px rgba(0,0,0,0.3)',
                   border: '1px solid rgba(255,255,255,0.08)'
                 }}>
-                  <img 
-                    src="https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=600&auto=format&fit=crop" 
+                  <img
+                    src="https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=600&auto=format&fit=crop"
                     alt="Kit de Calma Nocturna Aurea Elizabeth"
                     style={{
                       width: '100%',
@@ -1074,7 +1109,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                       objectFit: 'cover'
                     }}
                   />
-                  
+
                   {/* Floating Info Overlay */}
                   <div style={{
                     position: 'absolute',
@@ -1106,9 +1141,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
         <div className="container" style={{ padding: '0 24px' }}>
           <div className="grid-2" style={{ gap: '32px' }}>
-            
+
             {/* Widget A: Guía Interactiva de Respiración Circular */}
-            <div 
+            <div
               className="glass-panel"
               style={{
                 padding: '36px',
@@ -1132,12 +1167,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               </div>
 
               {/* Círculo pulsante animado */}
-              <div 
-                className={`breathing-circle ${
-                  breathActive && breathPhase === 'Inhalá' ? 'inhale' : ''
-                } ${
-                  breathActive && breathPhase === 'Exhalá' ? 'exhale' : ''
-                }`}
+              <div
+                className={`breathing-circle ${breathActive && (breathPhase === 'Inhalá' || breathPhase === 'Retené') ? 'inhale' : ''
+                  } ${breathActive && breathPhase === 'Exhalá' ? 'exhale' : ''
+                  }`}
                 style={{
                   width: '160px',
                   height: '160px',
@@ -1148,11 +1181,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   alignItems: 'center',
                   justifyContent: 'center',
                   transition: 'all 4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: breathActive 
-                    ? (breathPhase === 'Inhalá' ? '0 0 50px rgba(176, 142, 98, 0.5)' : '0 0 30px rgba(79, 94, 76, 0.3)') 
+                  boxShadow: breathActive
+                    ? ((breathPhase === 'Inhalá' || breathPhase === 'Retené') ? '0 0 50px rgba(176, 142, 98, 0.5)' : '0 0 30px rgba(79, 94, 76, 0.3)')
                     : '0 8px 24px rgba(44, 36, 32, 0.05)',
-                  background: breathActive 
-                    ? (breathPhase === 'Inhalá' ? 'radial-gradient(circle, var(--color-dorado-mate) 0%, var(--color-oliva-salvia) 100%)' : 'radial-gradient(circle, var(--color-bosque-suave) 0%, var(--color-arena-tostada) 100%)')
+                  background: breathActive
+                    ? ((breathPhase === 'Inhalá' || breathPhase === 'Retené') ? 'radial-gradient(circle, var(--color-dorado-mate) 0%, var(--color-oliva-salvia) 100%)' : 'radial-gradient(circle, var(--color-bosque-suave) 0%, var(--color-arena-tostada) 100%)')
                     : 'rgba(79, 94, 76, 0.08)',
                   border: '1px solid rgba(176, 142, 98, 0.35)',
                   color: breathActive ? 'var(--color-text-light)' : 'var(--color-oliva-salvia)'
@@ -1171,7 +1204,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '240px' }}>
-                <Button 
+                <Button
                   variant={breathActive ? 'secondary' : 'primary'}
                   onClick={() => {
                     setBreathActive(!breathActive);
@@ -1182,13 +1215,18 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    ...(breathActive ? {
+                      color: 'var(--color-text-dark)',
+                      borderColor: 'var(--color-text-dark)',
+                      backgroundColor: 'rgba(61, 46, 40, 0.05)'
+                    } : {})
                   }}
                 >
                   {breathActive ? <Pause size={14} /> : <Play size={14} />}
                   <span>{breathActive ? 'Detener Ritual' : 'Iniciar Respiración'}</span>
                 </Button>
-                
+
                 {breathActive && (
                   <Typography variant="caption" color="gold" style={{ fontSize: '0.65rem' }}>
                     * Inhalá (4s) → Retené (4s) → Exhalá (4s)
@@ -1198,7 +1236,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             </div>
 
             {/* Widget B: Tarjeta Editorial de Invitación al Quiz */}
-            <div 
+            <div
               className="glass-panel"
               style={{
                 padding: '36px',
@@ -1217,16 +1255,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   <HelpCircle size={14} />
                   Filtro Sensorial
                 </span>
-                
-                <Typography variant="h3" style={{ fontSize: '1.6rem', marginTop: '12px', marginBottom: '14px' }}>
+
+                <Typography variant="h3" style={{ fontSize: '1.6rem', marginTop: '12px', marginBottom: '14px', color: 'var(--color-arena-tostada)' }}>
                   Encuentra tu ritual de calma
                 </Typography>
-                
+
                 <p style={{
                   fontFamily: 'var(--font-sans)',
                   fontSize: '0.9rem',
                   lineHeight: '1.6',
-                  color: 'var(--color-text-muted)',
+                  color: 'rgba(234, 222, 201, 0.8)',
                   marginBottom: '20px'
                 }}>
                   ¿Te sentís abrumado por la inmediatez? ¿Buscás purificar tu espacio o restaurar tu balance interno? Respondé un cuestionario místico de 4 preguntas y dejá que nuestro algoritmo holístico elija las alquimias perfectas para vos.
@@ -1245,23 +1283,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 margin: '10px 0'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Paso 1</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Sentir</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 1</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Sentir</span>
                 </div>
                 <div style={{ width: '20px', height: '1px', backgroundColor: 'var(--color-dorado-mate)' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Paso 2</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Aroma</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 2</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Aroma</span>
                 </div>
                 <div style={{ width: '20px', height: '1px', backgroundColor: 'var(--color-dorado-mate)' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Paso 3</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>Ritual</span>
+                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 3</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Ritual</span>
                 </div>
               </div>
 
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => onNavigate('rituals')}
                 style={{
                   display: 'flex',
@@ -1327,6 +1365,69 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           100% {
             transform: scaleX(1.01) scaleY(1.01) rotate(-0.5deg);
             opacity: 0.94;
+          }
+        }
+
+        /* Responsive Overrides for Templo Home */
+        @media (max-width: 767px) {
+          .hero-container {
+            padding: 30px 10px !important;
+            min-height: auto !important;
+            margin-bottom: 30px !important;
+          }
+          .hero-container .container {
+            padding: 10px !important;
+          }
+          .categories-grid-container {
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: auto !important;
+            gap: 16px !important;
+          }
+          .categories-grid-container > div {
+            grid-column: span 6 !important;
+            min-height: 220px !important;
+            padding: 20px !important;
+          }
+          .manifesto-circle {
+            width: min(92vw, 500px) !important;
+            height: min(92vw, 500px) !important;
+            border-radius: 50% !important;
+            padding: 24px 20px !important;
+            margin: 0 auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: center !important;
+            align-items: center !important;
+          }
+          .manifesto-tag {
+            font-size: 0.6rem !important;
+            margin-bottom: 8px !important;
+          }
+          .manifesto-title {
+            font-size: clamp(0.9rem, 3.8vw, 1.25rem) !important;
+            margin-bottom: 12px !important;
+            line-height: 1.3 !important;
+          }
+          .manifesto-divider {
+            margin-bottom: 12px !important;
+          }
+          .manifesto-text {
+            font-size: clamp(0.68rem, 2.8vw, 0.8rem) !important;
+            line-height: 1.45 !important;
+            max-width: 88% !important;
+          }
+          .testimonial-carousel-panel {
+            padding: 20px !important;
+          }
+          .testimonial-carousel-panel .grid-2 {
+            gap: 20px !important;
+          }
+          .kit-nocturno-panel {
+            padding: 24px !important;
+          }
+          .kit-nocturno-panel .grid-2 {
+            gap: 24px !important;
           }
         }
       `}</style>

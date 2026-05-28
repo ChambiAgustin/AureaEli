@@ -13,14 +13,12 @@ import { AdminPage } from './features/admin/AdminPage';
 import { apiRepository } from './core/api';
 import type { Product, UserProfile, Order } from './core/api/IRepository';
 import logoImg from './assets/logo.png';
-import sloganImg from './assets/slogan.png';
 import { InteractiveParticles } from './shared/components/InteractiveParticles';
-import { 
-  Home, 
-  Sparkles, 
-  Wind, 
-  ShoppingCart, 
-  User, 
+import {
+  Home,
+  Sparkles,
+  Wind,
+  ShoppingCart,
 } from 'lucide-react';
 
 // Tipado para paleta cromática de la Home
@@ -81,6 +79,13 @@ const colorPalette: ColorToken[] = [
     hex: '#9E6252',
     meaning: 'El fuego lento que reconforta el alma cansada.',
     mood: 'Calidez Humana'
+  },
+  {
+    name: 'Magenta Oscuro',
+    variable: '--color-magenta-oscuro',
+    hex: '#8A004F',
+    meaning: 'Un acento vibrante de vitalidad y misterio profundo.',
+    mood: 'Vitalidad y Misterio'
   }
 ];
 
@@ -88,18 +93,18 @@ function App() {
   // Navigation Tabs: 'home' | 'catalog' | 'rituals' | 'profile' | 'admin'
   const [activeTab, setActiveTab] = useState<'home' | 'catalog' | 'rituals' | 'profile' | 'admin'>('home');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('');
-  
+
   // Application Data States
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [cartItems, setCartItems] = useState<{ product: Product; quantity: number }[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [toastMsg, setToastMsg] = useState<string>('');
-  
+
   // Modals / Panels toggles
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
-  
+
   // Home Interactive states (from Phase 1)
   const [selectedColor, setSelectedColor] = useState<ColorToken>(colorPalette[0]);
   const [breathPhase, setBreathPhase] = useState<'Espera' | 'Inhalá' | 'Retené' | 'Exhalá'>('Espera');
@@ -114,6 +119,9 @@ function App() {
       triggerToast(`Abriendo catálogo pre-filtrado por: ${category}`);
     } else {
       setSelectedCategoryFilter('');
+    }
+    if (tab === 'admin') {
+      triggerToast('Accediendo al Altar de Autogestión.');
     }
   };
 
@@ -132,7 +140,7 @@ function App() {
         const profile = await apiRepository.getUserProfile();
         setUserProfile(profile);
         setFavorites(profile.favorites || []);
-        
+
         const ordersData = await apiRepository.getOrders();
         setOrders(ordersData);
       } catch (err) {
@@ -144,8 +152,8 @@ function App() {
 
   // Home Breathing timer effect
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
+    let interval: any = null;
+
     if (breathActive) {
       interval = setInterval(() => {
         setCountdown((prev) => {
@@ -182,20 +190,20 @@ function App() {
       setActiveTab('profile');
       return;
     }
-    
+
     const isFav = favorites.includes(productId);
     const updatedFavs = isFav
       ? favorites.filter((id) => id !== productId)
       : [...favorites, productId];
-    
+
     setFavorites(updatedFavs);
-    
+
     const updatedProfile: UserProfile = {
       ...userProfile,
       favorites: updatedFavs
     };
     setUserProfile(updatedProfile);
-    
+
     try {
       await apiRepository.updateUserProfile(updatedProfile);
       triggerToast(isFav ? 'Eliminado de tus intenciones.' : 'Guardado en tus intenciones sagradas.');
@@ -285,7 +293,7 @@ function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw', overflowX: 'hidden', position: 'relative' }}>
-      
+
       {/* Fondo interactivo premium de alto rendimiento en Canvas 2D */}
       <InteractiveParticles />
 
@@ -313,64 +321,24 @@ function App() {
         </div>
       )}
 
-      {/* Botón flotante de Administrador superior derecho, libre de barras */}
-      <button 
-        onClick={() => {
-          handleNavigate('admin');
-          triggerToast('Accediendo al Altar de Autogestión.');
-        }}
-        style={{
-          position: 'fixed',
-          top: '24px',
-          right: '32px',
-          zIndex: 1000,
-          background: 'rgba(250, 246, 238, 0.4)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          color: activeTab === 'admin' ? 'var(--color-dorado-mate)' : 'var(--color-text-dark)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '12px',
-          borderRadius: '50%',
-          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          border: '1px solid rgba(176, 142, 98, 0.15)',
-          boxShadow: '0 4px 12px rgba(44, 36, 32, 0.03)'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.4)';
-          e.currentTarget.style.color = 'var(--color-dorado-mate)';
-          e.currentTarget.style.background = 'rgba(250, 246, 238, 0.8)';
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.15)';
-          e.currentTarget.style.color = activeTab === 'admin' ? 'var(--color-dorado-mate)' : 'var(--color-text-dark)';
-          e.currentTarget.style.background = 'rgba(250, 246, 238, 0.4)';
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-        title="Portal de Administración"
-      >
-        <User size={22} style={{ strokeWidth: 1.5 }} />
-      </button>
+
 
       {/* Contenedor Principal con Espaciado Lateral y Auto-crecimiento */}
       <main className="container" style={{ flex: '1 0 auto', paddingBottom: '80px', marginTop: '20px' }}>
-        
+
         {/* ==================== RENDERING TABS ==================== */}
 
         {/* 1. HOME TEMPLO (SILENT SELLER) */}
         {activeTab === 'home' && (
-          <HomePage 
-            onNavigate={handleNavigate} 
-            onAddToCart={handleAddToCart} 
+          <HomePage
+            onNavigate={handleNavigate}
+            onAddToCart={handleAddToCart}
           />
         )}
 
         {/* 2. CATALOGO SENSORIAL */}
         {activeTab === 'catalog' && (
-          <CatalogPage 
+          <CatalogPage
             onAddToCart={handleAddToCart}
             favorites={favorites}
             onToggleFavorite={handleToggleFavorite}
@@ -415,7 +383,7 @@ function App() {
 
         {/* 5. ALTAR DE AUTOGESTION (ADMIN PANEL) */}
         {activeTab === 'admin' && (
-          <AdminPage 
+          <AdminPage
             onProductsChange={handleSyncCartWithRepository}
             triggerToast={triggerToast}
           />
@@ -424,8 +392,8 @@ function App() {
       </main>
 
       {/* ==================== FOOTER DE LUJO REFINADO ==================== */}
-      <footer 
-        className="glass-panel"
+      <footer
+        className="glass-panel templo-footer"
         style={{
           marginTop: '80px',
           padding: '60px 40px 120px', // Extra bottom spacing to clear the floating bottom navigation bar
@@ -445,7 +413,6 @@ function App() {
           {/* Columna 1: Logotipo, Slogan e Intención */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <img src={logoImg} alt="Aurea Elizabeth Logo" style={{ height: '48px', width: 'auto', alignSelf: 'flex-start', filter: 'brightness(1.05)' }} />
-            <img src={sloganImg} alt="El silencio es elocuente" style={{ height: '16px', width: 'auto', alignSelf: 'flex-start', opacity: 0.85 }} />
             <p style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: '1.6', marginTop: '10px' }}>
               “El bienestar no es una meta distante; es la decisión consciente de respirar con intención en este preciso instante.”
             </p>
@@ -466,9 +433,22 @@ function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <Typography variant="caption" color="gold" weight="bold">Contacto Álmico</Typography>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              <span>📍 Oasis Central, Buenos Aires, Argentina</span>
+              <span>Salta, Argentina</span>
               <span>✉️ almas@aureaelizabeth.com</span>
-              <span>📞 +54 9 11 3842-8812 (WhatsApp Directo)</span>
+              <a
+                href="https://wa.me/5493875218180"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: 'var(--color-text-muted)',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-dorado-mate)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--color-text-muted)'}
+              >
+                📞 +54 9 3875 21-8180 (WhatsApp Directo)
+              </a>
               <span style={{ fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--color-dorado-mate)' }}>"Lunes a Viernes a ritmo lento y pausado"</span>
             </div>
           </div>
@@ -515,7 +495,7 @@ function App() {
       </footer>
 
       {/* ==================== BOTTOM FLOATING NAVIGATION BAR ==================== */}
-      <nav 
+      <nav
         className="glass-panel"
         style={{
           position: 'fixed',
@@ -537,7 +517,7 @@ function App() {
           backdropFilter: 'blur(25px)',
         }}
       >
-        <button 
+        <button
           onClick={() => handleNavigate('home')}
           style={{
             background: 'none',
@@ -558,7 +538,7 @@ function App() {
           <span>Inicio</span>
         </button>
 
-        <button 
+        <button
           onClick={() => handleNavigate('catalog')}
           style={{
             background: 'none',
@@ -579,7 +559,7 @@ function App() {
           <span>Catálogo</span>
         </button>
 
-        <button 
+        <button
           onClick={() => handleNavigate('rituals')}
           style={{
             background: 'none',
@@ -601,7 +581,7 @@ function App() {
         </button>
 
         {/* BOTÓN DE CARRITO */}
-        <button 
+        <button
           onClick={() => setIsCartOpen(true)}
           style={{
             background: 'none',
@@ -675,6 +655,16 @@ function App() {
           0% { transform: scale(0.3); }
           50% { transform: scale(1.3); }
           100% { transform: scale(1); }
+        }
+
+        /* Responsive Overrides for Templo App Frame */
+        @media (max-width: 767px) {
+          .templo-footer {
+            padding: 40px 16px 100px !important;
+          }
+          .templo-footer > div {
+            gap: 28px !important;
+          }
         }
       `}</style>
     </div>

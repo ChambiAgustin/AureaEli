@@ -48,7 +48,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
   const [meditationTime, setMeditationTime] = useState<number>(0);
   const [breathPhase, setBreathPhase] = useState<'Inhalá' | 'Retené' | 'Exhalá'>('Inhalá');
   const [breathCountdown, setBreathCountdown] = useState<number>(4);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Quiz Questions definition (minimalist, 3 deeply introspective questions)
@@ -245,7 +245,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
             margin: '0 auto 30px'
           }} />
           
-          <Typography variant="body" color="light" style={{ fontSize: '1.05rem', lineHeight: '1.8', marginBottom: '32px' }}>
+          <Typography variant="body" color="dark" style={{ fontSize: '1.05rem', lineHeight: '1.8', marginBottom: '32px' }}>
             Cada día trae su propio viento. Diseñamos un buscador de paz interior: un Quiz Sensorial Botánico que descifra el estado de tu sistema nervioso y te prescribe un ritual de calma guiado con sus elementos aromaterapéuticos asociados.
           </Typography>
 
@@ -302,6 +302,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
           >
             <Typography 
               variant="h2" 
+              color="light"
               style={{ 
                 fontSize: '1.6rem', 
                 textAlign: 'center', 
@@ -380,7 +381,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
           </button>
 
           {/* Grid Principal: Ritual + Meditation Player */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', lg: '1.2fr 1fr', gap: '40px', alignItems: 'start' }}>
+          <div className="grid-responsive-ritual" style={{ alignItems: 'start' }}>
             
             {/* Detalles del Ritual */}
             <div>
@@ -390,7 +391,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
               <Typography variant="h1" style={{ fontSize: '2.2rem', margin: '10px 0 16px' }}>
                 {recommendedRitual.title}
               </Typography>
-              <Typography variant="body" color="light" style={{ fontSize: '1.05rem', lineHeight: '1.7', marginBottom: '32px' }}>
+              <Typography variant="body" color="dark" style={{ fontSize: '1.05rem', lineHeight: '1.7', marginBottom: '32px' }}>
                 {recommendedRitual.description}
               </Typography>
 
@@ -429,7 +430,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
                       }}>
                         {idx + 1}
                       </div>
-                      <Typography variant="body-sm" color="light" style={{ lineHeight: '1.6', fontSize: '0.9rem' }}>
+                      <Typography variant="body-sm" color="dark" style={{ lineHeight: '1.6', fontSize: '0.9rem' }}>
                         {step}
                       </Typography>
                     </div>
@@ -455,7 +456,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
                 <Typography variant="caption" color="gold">
                   Guía Sensorial Auditiva
                 </Typography>
-                <Typography variant="h3" style={{ marginTop: '8px', fontSize: '1.3rem' }}>
+                <Typography variant="h3" color="light" style={{ marginTop: '8px', fontSize: '1.3rem' }}>
                   Respiración Circular Guiada
                 </Typography>
                 
@@ -636,7 +637,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
           {/* 4. SECCIÓN KIT DE PRODUCTOS ASOCIADOS */}
           {kitProducts.length > 0 && (
             <div style={{ marginTop: '80px', borderTop: '1px solid rgba(197, 168, 128, 0.15)', paddingTop: '40px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', md: 'row', justifyContent: 'space-between', alignItems: 'flex-start', md: 'align-items-center', gap: '20px', marginBottom: '32px' }}>
+              <div className="flex-responsive" style={{ gap: '20px', marginBottom: '32px' }}>
                 <div>
                   <Typography variant="caption" color="gold" weight="semibold">
                     Herramientas de Intención

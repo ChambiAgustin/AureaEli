@@ -360,7 +360,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', sm: '1fr 1fr', gap: '16px' }}>
+                <div className="grid-responsive-half" style={{ gap: '16px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
                       Correo Electrónico *

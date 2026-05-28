@@ -187,6 +187,95 @@ const MOCK_PRODUCTS: Product[] = [
     aroma: 'Cítrico, Herbal, Lavanda',
     color: 'Crudo, Arena y Ámbar',
     material: 'Algodón orgánico, Vidrio ámbar, Cerámica artesanal'
+  },
+  {
+    id: 'prod-oleo-serenidad',
+    name: 'Oleo Sagrado — Sándalo y Jazmín del Atardecer',
+    description: 'Elixir de aceites esenciales puros prensados en frío para masajes de calma en sienes y cuello.',
+    sensoryDescription: 'Una fragancia de ensueño donde el magnetismo amaderado del sándalo de Mysore se rinde ante el misterio nocturno del jazmín absoluto. Este óleo concentrado actúa como un ancla aromática para calmar la rumiación mental y despertar el reposo intuitivo del alma antes de dormir.',
+    price: 5900,
+    stock: 16,
+    imageUrl: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=800&q=80',
+    category: 'Aromaterapia',
+    subcategory: 'Óleos',
+    ingredients: [
+      'Aceite de Jojoba orgánica (Simmondsia chinensis) como base conductora',
+      'Aceite esencial puro de Sándalo (Santalum album)',
+      'Jazmín absoluto destilado al vapor',
+      'Vitamina E pura conservante natural'
+    ],
+    tags: ['Relajación', 'Óleos', 'Sensualidad', 'Claridad'],
+    isFeatured: true,
+    isNew: true,
+    aroma: 'Jazmín y Sándalo profundo',
+    color: 'Dorado ámbar líquido',
+    material: 'Gotero de vidrio premium con pipeta negra y detalles bronce'
+  },
+  {
+    id: 'prod-arcilla-pureza',
+    name: 'Arcilla del Altar — Mascarilla Detox de Manzanilla',
+    description: 'Arcilla volcánica pura con flores deshidratadas para purificar y calmar el tejido cutáneo.',
+    sensoryDescription: 'Tierra sagrada rica en sílice y oligoelementos que absorbe las impurezas celulares y la contaminación urbana. Infusionada con la vibración sanadora de flores de manzanilla silvestre y avena coloidal, esta alquimia en polvo suaviza, desinflama y consagra tu rostro en un ritual de spa terrenal.',
+    price: 4800,
+    stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80',
+    category: 'Bienestar y Spa',
+    subcategory: 'Arcillas',
+    ingredients: [
+      'Caolín blanco micronizado de alta pureza',
+      'Arcilla bentonita volcánica purificada',
+      'Flores de Manzanilla (Matricaria recutita) pulverizadas a mano',
+      'Avena coloidal orgánica fina'
+    ],
+    tags: ['Cuidado', 'Piel', 'Purificación', 'Manzanilla'],
+    isFeatured: false,
+    isNew: true,
+    aroma: 'Herbal suave y Manzanilla dulce',
+    color: 'Crema verdoso sutil',
+    material: 'Bolsa de lino rústica con contenedor biodegradable interno'
+  },
+  {
+    id: 'prod-porta-incienso',
+    name: 'Cascada de Humo — Porta Incensario de Piedra y Arcilla',
+    description: 'Soporte escultórico artesanal diseñado para la combustión de sahumerios y conos.',
+    sensoryDescription: 'Una escultura orgánica moldeada en gres refractario que rinde homenaje a la erosión natural de las rocas. Diseñada con un canal curvo que guía el humo sagrado en una cascada descendente de ensueño, creando una experiencia meditativa visual hipnótica y pacífica en tu altar.',
+    price: 7200,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80',
+    category: 'Hogar con intención',
+    subcategory: 'Cerámicas',
+    ingredients: [
+      'Arcilla refractaria texturada de alta temperatura',
+      'Esmaltes de ceniza de madera natural',
+      'Horneado a leña tradicional a 1220°C'
+    ],
+    tags: ['Artesanal', 'Incienso', 'Altar', 'Gres'],
+    isFeatured: true,
+    isNew: false,
+    aroma: 'Neutro',
+    color: 'Marrón tierra y ceniza gris',
+    material: 'Cerámica gres texturada refractaria'
+  },
+  {
+    id: 'prod-kimono-lino',
+    name: 'Kimono Calma — Lino Orgánico de la Tierra',
+    description: 'Kimono de corte holgado confeccionado en lino puro para habitar tu cuerpo en absoluta paz.',
+    sensoryDescription: 'Confeccionado en puro lino europeo de caída etérea y tacto rústico pero increíblemente suave. Sus mangas anchas y silueta minimalista sin costuras opresivas envuelven tu cuerpo en una brisa fresca, ideal para transitar tus rituales de calma matutinos o descansar después de tu baño consciente.',
+    price: 24500,
+    stock: 7,
+    imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80',
+    category: 'Moda',
+    subcategory: 'Prendas',
+    ingredients: [
+      'Hilos de lino 100% orgánico certificado por OEKO-TEX',
+      'Tintes naturales biodegradables extraídos de cortezas de árboles'
+    ],
+    tags: ['Textil', 'Lino', 'Cuerpo', 'Kimono'],
+    isFeatured: true,
+    isNew: true,
+    aroma: 'Fresco neutro',
+    color: 'Crudo lino original',
+    material: 'Lino puro texturado biodegradable'
   }
 ];
 
@@ -277,7 +366,23 @@ export class MockRepository implements IRepository {
 
   async getProducts(): Promise<Product[]> {
     await this.delay(350);
-    return this.getStoredData<Product[]>(STORAGE_KEYS.PRODUCTS, MOCK_PRODUCTS);
+    const stored = this.getStoredData<Product[]>(STORAGE_KEYS.PRODUCTS, MOCK_PRODUCTS);
+    
+    // Merge new mock products that might have been added to code but are missing from localStorage
+    let updated = [...stored];
+    let changed = false;
+    for (const mockProd of MOCK_PRODUCTS) {
+      if (!updated.some((p) => p.id === mockProd.id)) {
+        updated.push(mockProd);
+        changed = true;
+      }
+    }
+    
+    if (changed) {
+      this.setStoredData(STORAGE_KEYS.PRODUCTS, updated);
+    }
+    
+    return updated;
   }
 
   async getProductById(id: string): Promise<Product | null> {

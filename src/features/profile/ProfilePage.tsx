@@ -148,7 +148,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </Typography>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1fr 1.3fr', gap: '32px', alignItems: 'start' }}>
+      <div className="grid-responsive-profile" style={{ alignItems: 'start' }}>
         
         {/* PANEL IZQUIERDO: DETALLES PERSONALES Y PREFERENCIAS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

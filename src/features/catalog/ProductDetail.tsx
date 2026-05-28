@@ -135,14 +135,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         </button>
 
         {/* Dos columnas de Ficha */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1fr 1.1fr', gap: '0' }}>
+        <div className="grid-responsive-2" style={{ gap: '0' }}>
           
           {/* Columna Izquierda: Imagen Sensorial */}
-          <div style={{
+          <div className="product-detail-image-container" style={{
             position: 'relative',
-            height: '350px',
-            md: 'auto',
-            minHeight: '400px',
             backgroundColor: 'rgba(0,0,0,0.2)',
           }}>
             <img 
@@ -260,13 +257,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             </div>
 
             {/* Fila de Precio, Stock y CTA */}
-            <div style={{
+            <div className="product-detail-purchase-row" style={{
               display: 'flex',
-              flexDirection: 'column',
-              sm: 'row',
               justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              sm: 'align-items-center',
               gap: '16px',
               borderTop: '1px solid rgba(255,255,255,0.06)',
               paddingTop: '20px'
@@ -282,7 +275,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 </Typography>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', width: '100%', sm: 'width: auto' }}>
+              <div className="product-detail-buttons-container" style={{ display: 'flex', gap: '10px' }}>
                 <Button
                   variant="secondary"
                   onClick={() => onToggleFavorite(activeProduct.id)}
@@ -426,15 +419,30 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         }
         
         /* Queries para estilos responsivos puros sin Tailwind */
+        .product-detail-image-container {
+          height: 320px;
+        }
+        .product-detail-purchase-row {
+          flex-direction: column;
+          align-items: flex-start;
+          width: 100%;
+        }
+        .product-detail-buttons-container {
+          width: 100%;
+        }
         @media (min-width: 768px) {
-          div[style*="gridTemplateColumns: 1fr"] {
-            grid-template-columns: 1fr 1.1fr !important;
-          }
-          div[style*="height: 350px"] {
+          .product-detail-image-container {
             height: auto !important;
+            min-height: 400px;
           }
-          button[style*="display: none"] {
-            display: inline-flex !important;
+        }
+        @media (min-width: 640px) {
+          .product-detail-purchase-row {
+            flex-direction: row !important;
+            align-items: center !important;
+          }
+          .product-detail-buttons-container {
+            width: auto !important;
           }
         }
       `}</style>
