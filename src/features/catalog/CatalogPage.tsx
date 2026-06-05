@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { apiRepository } from '../../core/api';
 import type { Product, UserProfile } from '../../core/api/IRepository';
+import { useProducts } from '../../core/hooks/useProducts';
+import { useCategories } from '../../core/hooks/useCategories';
+import { ErrorState } from '../../shared/components/ErrorState';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
@@ -20,9 +22,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   onToggleFavorite,
   initialCategory,
 }) => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const { products, loading, error: productsError, reload: reloadProducts } = useProducts();
+  const { categoryNames } = useCategories();
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
   
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -30,18 +32,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 9;
 
-  // Normalize initialCategory when passed from outside
+  // Normaliza el initialCategory contra los nombres reales de la BD
   useEffect(() => {
-    if (initialCategory) {
-      const lower = initialCategory.toLowerCase();
-      if (lower.includes('aromaterapia')) setSelectedCategory('Aromaterapia');
-      else if (lower.includes('spa') || lower.includes('bienestar')) setSelectedCategory('Spa');
-      else if (lower.includes('hogar')) setSelectedCategory('Hogar');
-      else if (lower.includes('kits') || lower.includes('regalo')) setSelectedCategory('Kits');
-      else if (lower.includes('moda')) setSelectedCategory('Moda');
-      else setSelectedCategory('Todos');
-    }
-  }, [initialCategory]);
+    if (!initialCategory || categoryNames.length === 0) return;
+    const lower = initialCategory.toLowerCase();
+    const match = categoryNames.find(name => name.toLowerCase().includes(lower) || lower.includes(name.toLowerCase()));
+    setSelectedCategory(match ?? 'Todos');
+  }, [initialCategory, categoryNames]);
   const [selectedAroma, setSelectedAroma] = useState<string>('Todos');
   const [maxPrice, setMaxPrice] = useState<number>(30000);
   const [showNewOnly, setShowNewOnly] = useState<boolean>(false);
@@ -50,26 +47,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   
   // Product Detail State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  // Load products from repository
-  useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      try {
-        const data = await apiRepository.getProducts();
-        setProducts(data);
-      } catch (error) {
-        console.error('Error fetching products from repository:', error);
-      } finally {
-        // Subtle loading timeout to appreciate the premium skeleton states
-        setTimeout(() => {
-          setLoading(false);
-        }, 600);
-      }
-    };
-
-    fetchProducts();
-  }, []);
+  // Los productos vienen del hook useProducts (Supabase + Realtime)
 
   // Filter application logic
   useEffect(() => {
@@ -88,16 +68,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       );
     }
 
-    // Category filter
+    // Category filter — usa los nombres reales de Supabase
     if (selectedCategory !== 'Todos') {
       result = result.filter((p) => {
         if (selectedCategory === 'Favoritos') return favorites.includes(p.id);
-        if (selectedCategory === 'Aromaterapia') return p.category === 'Aromaterapia';
-        if (selectedCategory === 'Spa') return p.category === 'Bienestar y Spa';
-        if (selectedCategory === 'Hogar') return p.category === 'Hogar con intención';
-        if (selectedCategory === 'Kits') return p.category === 'Kits';
-        if (selectedCategory === 'Moda') return p.category === 'Moda';
-        return true;
+        return p.category === selectedCategory;
       });
     }
 
@@ -126,8 +101,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       });
     }
 
-    // Price filter
-    result = result.filter((p) => p.price <= maxPrice);
+    // Price filter — usa promoPrice si existe
+    result = result.filter((p) => (p.promoPrice ?? p.price) <= maxPrice);
 
     // States filter
     if (showNewOnly) {
@@ -145,8 +120,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly]);
 
-  const categories = ['Todos', 'Aromaterapia', 'Spa', 'Hogar', 'Moda', 'Kits'];
-  const aromas = ['Todos', 'Copal', 'Eucalipto', 'Menta', 'Rosas', 'Madera'];
+  // Categorías dinámicas desde Supabase + "Todos" y "Favoritos" fijos
+  const categoryFilters = ['Todos', ...categoryNames];
+
+  // Aromas derivados de los productos reales (únicos, no vacíos)
+  const aromas = ['Todos', ...Array.from(
+    new Set(products.map(p => p.aroma).filter(a => a && a !== 'Neutro'))
+  ).slice(0, 8)];
 
   const handleResetFilters = () => {
     setSearchTerm('');
@@ -280,7 +260,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         <div className="mobile-scroll-x" style={{
           paddingBottom: '8px'
         }}>
-          {categories.map((cat) => (
+          {categoryFilters.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -439,7 +419,12 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
       {/* Grilla de Productos */}
       <div className="container" style={{ padding: '0 0 40px 0' }}>
-        {loading ? (
+        {productsError ? (
+          <ErrorState
+            message={productsError}
+            onRetry={reloadProducts}
+          />
+        ) : loading ? (
           /* Skeletons de Carga Premium */
           <div className="grid-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -494,12 +479,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
             return (
               <>
-                <div className="grid-3">
+                <div className="grid-3 catalog-grid">
                   {currentProducts.map((product) => {
                     const isFav = favorites.includes(product.id);
                     
                     return (
                       <Card 
+                        className="catalog-product-card"
                         key={product.id}
                         style={{
                           display: 'flex',
@@ -553,7 +539,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   <div>
                     {/* Imagen de Producto */}
                     <div 
-                      onClick={() => setSelectedProduct(product)}
+                      className="product-card-image-wrapper"
+                      onClick={() => setLightboxImage(product.imageUrl)}
                       style={{
                         height: '180px',
                         width: '100%',
@@ -625,6 +612,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
                     {/* Título de Producto */}
                     <Typography 
+                      className="product-card-title"
                       variant="h3" 
                       style={{ 
                         fontSize: '1.2rem', 
@@ -641,6 +629,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
                     {/* Descripción corta */}
                     <Typography 
+                      className="product-card-desc"
                       variant="body-sm" 
                       color="muted" 
                       style={{ 
@@ -658,7 +647,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   </div>
 
                   {/* Fila de Compra e Interacción */}
-                  <div style={{
+                  <div className="product-card-footer" style={{
                     borderTop: '1px solid rgba(255,255,255,0.06)',
                     paddingTop: '14px',
                     display: 'flex',
@@ -670,12 +659,24 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                       <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block' }}>
                         Aporte Ritual
                       </span>
-                      <Typography variant="h3" color="gold" style={{ fontSize: '1.25rem' }}>
-                        ${product.price.toLocaleString('es-AR')}
-                      </Typography>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <Typography variant="h3" color="gold" style={{ fontSize: '1.25rem' }}>
+                          ${(product.promoPrice ?? product.price).toLocaleString('es-AR')}
+                        </Typography>
+                        {product.promoPrice && (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', textDecoration: 'line-through' }}>
+                            ${product.price.toLocaleString('es-AR')}
+                          </span>
+                        )}
+                      </div>
+                      {product.promoPrice && (
+                        <span style={{ fontSize: '0.6rem', background: 'rgba(163,76,55,0.15)', color: '#c0604a', borderRadius: 4, padding: '1px 6px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                          PROMO
+                        </span>
+                      )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div className="product-card-actions" style={{ display: 'flex', gap: '6px' }}>
                       <Button
                         variant="secondary"
                         size="sm"
@@ -825,6 +826,75 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         />
       )}
 
+      {/* Lightbox de imágenes */}
+      {lightboxImage && (
+        <div 
+          onClick={() => setLightboxImage(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(15, 12, 11, 0.95)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out',
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxImage(null);
+            }}
+            style={{
+              position: 'absolute',
+              top: '24px',
+              right: '24px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-crema-calido)',
+              fontSize: '2rem',
+              cursor: 'pointer',
+              zIndex: 2001,
+              padding: '8px',
+              lineHeight: 1
+            }}
+          >
+            ✕
+          </button>
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative',
+              maxWidth: '90%',
+              maxHeight: '85%',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              border: '1px solid rgba(197, 168, 128, 0.15)',
+              backgroundColor: 'var(--color-tierra-profunda, #0f0c0b)'
+            }}
+          >
+            <img 
+              src={lightboxImage} 
+              alt="Preview" 
+              style={{
+                display: 'block',
+                maxWidth: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Sabor de Pulse Animation en CSS */}
       <style>{`
         @keyframes pulse {
@@ -847,6 +917,40 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             width: 100% !important;
             flex: none !important;
             min-width: 0 !important;
+          }
+          .catalog-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 12px !important;
+          }
+          .catalog-product-card {
+            padding: 12px !important;
+            min-height: 310px !important;
+            border-radius: 16px !important;
+          }
+          .product-card-image-wrapper {
+            height: 110px !important;
+            margin-bottom: 8px !important;
+          }
+          .product-card-title {
+            font-size: 0.95rem !important;
+            line-height: 1.2 !important;
+            margin-bottom: 4px !important;
+          }
+          .product-card-desc {
+            display: none !important;
+          }
+          .product-card-footer {
+            margin-top: 6px !important;
+            padding-top: 8px !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+          }
+          .product-card-actions {
+            width: 100% !important;
+          }
+          .product-card-actions > button {
+            flex: 1 !important;
           }
         }
       `}</style>

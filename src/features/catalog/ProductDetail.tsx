@@ -265,10 +265,20 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
               paddingTop: '20px'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <Typography variant="h2" color="gold" style={{ fontSize: '2rem' }}>
-                    ${activeProduct.price.toLocaleString('es-AR')}
+                    ${(activeProduct.promoPrice ?? activeProduct.price).toLocaleString('es-AR')}
                   </Typography>
+                  {activeProduct.promoPrice && (
+                    <span style={{ fontSize: '1.1rem', color: 'rgba(247,244,240,0.35)', textDecoration: 'line-through' }}>
+                      ${activeProduct.price.toLocaleString('es-AR')}
+                    </span>
+                  )}
+                  {activeProduct.promoPrice && (
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(163,76,55,0.25)', color: '#e07060', borderRadius: 6, padding: '3px 8px', fontWeight: 700, letterSpacing: '0.5px' }}>
+                      PROMO
+                    </span>
+                  )}
                 </div>
                 <Typography variant="body-sm" color="muted" style={{ fontSize: '0.75rem' }}>
                   {activeProduct.stock > 0 ? `Stock disponible: ${activeProduct.stock} unidades` : 'Sin stock disponible'}

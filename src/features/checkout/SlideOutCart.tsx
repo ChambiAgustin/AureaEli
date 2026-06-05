@@ -24,7 +24,12 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const totalCart = cartItems.reduce((acc, curr) => acc + curr.product.price * curr.quantity, 0);
+  // Usa promoPrice si existe, si no el precio normal
+  const effectivePrice = (p: Product) => p.promoPrice ?? p.price;
+  const totalCart = cartItems.reduce((acc, curr) => acc + effectivePrice(curr.product) * curr.quantity, 0);
+  const totalSavings = cartItems.reduce((acc, curr) =>
+    curr.product.promoPrice ? acc + (curr.product.price - curr.product.promoPrice) * curr.quantity : acc, 0
+  );
   const totalItems = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
 
   return (
@@ -48,7 +53,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
 
       {/* Drawer deslizante desde la derecha */}
       <div
-        className="glass-panel"
+        className="glass-panel slide-out-cart-drawer"
         style={{
           position: 'fixed',
           top: 0,
@@ -151,9 +156,21 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                   <Typography variant="body" color="light" weight="medium" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.product.name}
                   </Typography>
-                  <Typography variant="body-sm" color="gold" style={{ marginTop: '2px', fontSize: '0.8rem' }}>
-                    ${item.product.price.toLocaleString('es-AR')}
-                  </Typography>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <Typography variant="body-sm" color="gold" style={{ fontSize: '0.8rem' }}>
+                      ${effectivePrice(item.product).toLocaleString('es-AR')}
+                    </Typography>
+                    {item.product.promoPrice && (
+                      <span style={{ fontSize: '0.7rem', color: 'rgba(247,244,240,0.35)', textDecoration: 'line-through' }}>
+                        ${item.product.price.toLocaleString('es-AR')}
+                      </span>
+                    )}
+                    {item.product.promoPrice && (
+                      <span style={{ fontSize: '0.6rem', background: 'rgba(163,76,55,0.25)', color: '#e07060', borderRadius: 4, padding: '1px 5px', fontWeight: 700 }}>
+                        PROMO
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Controles del artículo */}
@@ -212,6 +229,12 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                 <span>Entrega Botánica</span>
                 <span style={{ color: 'var(--color-oliva-salvia)', fontWeight: 'bold' }}>Bonificada (Gratis)</span>
               </div>
+              {totalSavings > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e07060', fontSize: '0.82rem' }}>
+                  <span>Ahorrás con promos</span>
+                  <span style={{ fontWeight: 700 }}>-${totalSavings.toLocaleString('es-AR')}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', marginTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: '8px', color: 'var(--color-crema-calido)' }}>
                 <Typography variant="body" color="light" weight="medium">Aporte Total</Typography>
                 <span style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', fontFamily: 'var(--font-sans)' }}>
@@ -252,6 +275,18 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
         @keyframes slideInCart {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
+        }
+        @media (max-width: 767px) {
+          .slide-out-cart-drawer {
+            width: 88vw !important;
+            max-width: 88vw !important;
+            right: 12px !important;
+            top: 12px !important;
+            height: calc(100vh - 24px) !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(197, 168, 128, 0.3) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+          }
         }
       `}</style>
     </>

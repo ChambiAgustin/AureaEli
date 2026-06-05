@@ -13,12 +13,14 @@ import { AdminPage } from './features/admin/AdminPage';
 import { apiRepository } from './core/api';
 import type { Product, UserProfile, Order } from './core/api/IRepository';
 import logoImg from './assets/logo.png';
+import sloganImg from './assets/slogan.png';
 import { InteractiveParticles } from './shared/components/InteractiveParticles';
 import {
   Home,
   Sparkles,
   Wind,
   ShoppingCart,
+  User,
 } from 'lucide-react';
 
 // Tipado para paleta cromática de la Home
@@ -326,7 +328,90 @@ function App() {
         </div>
       )}
 
+      {/* Navbar Superior con Composición Editorial (Logo 56px, eslogan debajo, botón perfil a la derecha) */}
+      <header className="templo-header" style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+        padding: '24px 40px',
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        zIndex: 1000
+      }}>
+        {/* Logo reactivo centrado editorialmente */}
+        <div 
+          onClick={() => handleNavigate('home')}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            cursor: 'pointer',
+            transition: 'transform 0.3s ease',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <img 
+            src={logoImg} 
+            alt="Aurea Elizabeth Logo" 
+            style={{ 
+              height: '56px', 
+              width: 'auto', 
+              filter: 'brightness(1.05) drop-shadow(0 2px 10px rgba(245, 239, 228, 0.12))' 
+            }} 
+          />
+          <img 
+            src={sloganImg} 
+            alt="El silencio es elocuente" 
+            style={{ 
+              height: '14px', 
+              width: 'auto', 
+              marginTop: '8px', 
+              opacity: 0.8 
+            }} 
+          />
+        </div>
 
+        {/* Acceso Directo Estético (Administración / Perfil) en el extremo derecho */}
+        <button 
+          onClick={() => {
+            handleNavigate('admin');
+          }}
+          style={{
+            position: 'absolute',
+            right: '40px',
+            background: 'rgba(197, 168, 128, 0.05)',
+            border: '1px solid rgba(176, 142, 98, 0.15)',
+            borderRadius: '50%',
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: activeTab === 'admin' ? 'var(--color-dorado-mate)' : 'var(--color-text-dark)',
+            cursor: 'pointer',
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxShadow: '0 4px 12px rgba(44, 36, 32, 0.03)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.4)';
+            e.currentTarget.style.color = 'var(--color-dorado-mate)';
+            e.currentTarget.style.background = 'rgba(197, 168, 128, 0.12)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.15)';
+            e.currentTarget.style.color = activeTab === 'admin' ? 'var(--color-dorado-mate)' : 'var(--color-text-dark)';
+            e.currentTarget.style.background = 'rgba(197, 168, 128, 0.05)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          title="Portal de Administración"
+        >
+          <User size={20} style={{ strokeWidth: 1.5 }} />
+        </button>
+      </header>
 
       {/* Contenedor Principal con Espaciado Lateral y Auto-crecimiento */}
       <main className="container" style={{ flex: '1 0 auto', paddingBottom: '80px', marginTop: '20px' }}>
@@ -409,7 +494,7 @@ function App() {
           fontFamily: 'var(--font-sans)',
         }}
       >
-        <div style={{
+        <div className="footer-grid-container" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '40px',
@@ -528,25 +613,10 @@ function App() {
               <span style={{ fontStyle: 'italic', fontSize: '0.8rem', color: 'var(--color-dorado-mate)' }}>"Lunes a Viernes a ritmo lento y pausado"</span>
             </div>
           </div>
-
-          {/* Columna 4: Redes Minimalistas y Conexión */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <Typography variant="caption" color="gold" weight="bold">Vibrar en Sintonía</Typography>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
-              Unite a nuestro círculo de calma para recibir bitácoras de respiración e invitaciones exclusivas.
-            </p>
-            <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', marginTop: '8px' }}>
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', textDecoration: 'none' }}>Instagram</a>
-              <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-              <a href="https://pinterest.com" target="_blank" rel="noreferrer" style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', textDecoration: 'none' }}>Pinterest</a>
-              <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-              <a href="https://spotify.com" target="_blank" rel="noreferrer" style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', textDecoration: 'none' }}>Spotify</a>
-            </div>
-          </div>
         </div>
 
         {/* Línea Divisoria y Métodos de Pago Monocromáticos */}
-        <div style={{
+        <div className="footer-bottom-container" style={{
           borderTop: '1px solid rgba(197, 168, 128, 0.15)',
           paddingTop: '30px',
           display: 'flex',
@@ -558,15 +628,6 @@ function App() {
           <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem' }}>
             © {new Date().getFullYear()} Aurea Elizabeth. Hecho con intenciones puras y cuidado infinito.
           </Typography>
-
-          {/* Iconos Monocromáticos de Métodos de Pago */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', opacity: 0.55 }}>
-            <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-muted)' }}>Medios de Pago:</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid', padding: '3px 8px', borderRadius: '4px' }}>VISA</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid', padding: '3px 8px', borderRadius: '4px' }}>MC</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid', padding: '3px 8px', borderRadius: '4px' }}>MP</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid', padding: '3px 8px', borderRadius: '4px' }}>WA</span>
-          </div>
         </div>
       </footer>
 
@@ -735,11 +796,25 @@ function App() {
 
         /* Responsive Overrides for Templo App Frame */
         @media (max-width: 767px) {
+          .templo-header { padding: 12px 16px !important; }
+          main.container { margin-top: 0 !important; }
           .templo-footer {
-            padding: 40px 16px 100px !important;
+            padding: 32px 16px 100px !important;
           }
           .templo-footer > div {
             gap: 28px !important;
+          }
+          .footer-grid-container {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 24px 16px !important;
+          }
+          .templo-footer > div[style*="borderTop"],
+          .templo-footer > div[style*="border-top"],
+          .footer-bottom-container {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center !important;
+            gap: 16px !important;
           }
         }
       `}</style>

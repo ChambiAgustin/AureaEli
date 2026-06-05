@@ -11,6 +11,7 @@ import {
   Compass,
   ChevronLeft,
   ChevronRight,
+  Star,
   Sparkles,
   ArrowRight,
   Play,
@@ -370,30 +371,36 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             }}
           >
             {/* Contenedor del Círculo y del Logotipo + Tag */}
-            <div style={{
-              position: 'relative',
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '60px 0',
-              zIndex: 1
-            }}>
+            <div
+              className="hero-orbit-container"
+              style={{
+                position: 'relative',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '60px 0',
+                zIndex: 1
+              }}
+            >
               {/* Geometría Sagrada Orbital de Fondo */}
-              <div style={{
-                position: 'absolute',
-                top: '60%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 'min(95vw, 600px)',
-                height: 'min(95vw, 600px)',
-                borderRadius: '50%',
-                border: '1px dashed var(--color-selected-active, rgba(197, 160, 89, 0.3))',
-                animation: 'spin 180s linear infinite',
-                pointerEvents: 'none',
-                zIndex: 0
-              }} />
+              <div
+                className="hero-orbit-circle"
+                style={{
+                  position: 'absolute',
+                  top: '60%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: 'min(95vw, 600px)',
+                  height: 'min(95vw, 600px)',
+                  borderRadius: '50%',
+                  border: '1px dashed var(--color-selected-active, rgba(197, 160, 89, 0.3))',
+                  animation: 'spin 180s linear infinite',
+                  pointerEvents: 'none',
+                  zIndex: 0
+                }}
+              />
 
               {/* Tag superior minimalista */}
               <span style={{
@@ -414,6 +421,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
               <img
                 src={logoAureaImg}
                 alt="Aurea Elizabeth Logo Completo"
+                className="hero-brand-logo"
                 style={{
                   width: '100%',
                   maxWidth: 'min(85vw, 380px)',
@@ -430,27 +438,47 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             </div>
 
             {/* El Texto Poético Solicitado en Gran Formato Serif */}
-            <p style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: 'clamp(1.2rem, 3.5vw, 1.55rem)',
-              fontWeight: 300,
-              lineHeight: '1.7',
-              color: 'var(--color-text-dark)',
-              fontStyle: 'italic',
-              maxWidth: '760px',
-              marginTop: '12px',
-              letterSpacing: '0.02em'
-            }}>
+            <p
+              className="hero-slogan"
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 'clamp(1.2rem, 3.5vw, 1.55rem)',
+                fontWeight: 300,
+                lineHeight: '1.7',
+                color: 'var(--color-text-dark)',
+                fontStyle: 'italic',
+                maxWidth: '760px',
+                marginTop: '12px',
+                letterSpacing: '0.02em'
+              }}
+            >
               “No vendemos objetos; te invitamos a fundar un oasis en tu cotidianidad. Nuestras alquimias están diseñadas con materias primas nobles y puras para desacelerar tu sistema nervioso y reconectarte con tu eje.”
             </p>
 
-            <div style={{ display: 'flex', gap: '20px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {/* Los Botones Interactivos */}
+            <div
+              className="hero-buttons-container"
+              style={{
+                display: 'flex',
+                gap: '16px',
+                marginTop: '24px',
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}
+            >
               <Button
-                variant="terracota-outline"
+                variant="terracota"
                 size="lg"
                 onClick={() => onNavigate('catalog')}
               >
                 Ver colección
+              </Button>
+              <Button
+                variant="terracota-outline"
+                size="lg"
+                onClick={() => onNavigate('rituals')}
+              >
+                Ver rituales
               </Button>
             </div>
 
@@ -937,7 +965,22 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      size={16}
+                      color="var(--color-dorado-mate)"
+                      fill={i < bestSellers[activeCarouselIndex].rating ? 'var(--color-dorado-mate)' : 'none'}
+                    />
+                  ))}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
+                    ({bestSellers[activeCarouselIndex].sales} almas conformes)
+                  </span>
+                </div>
+
                 <Typography variant="caption" color="gold">{bestSellers[activeCarouselIndex].category}</Typography>
                 <Typography variant="h2" style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)' }}>{bestSellers[activeCarouselIndex].name}</Typography>
 
@@ -1163,12 +1206,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
       </section>
-
-
 
       {/* 8. WIDGETS DE BIENESTAR INMERSIVO (RESPIRACIÓN CIRCULAR + INVITE QUIZ) */}
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
@@ -1316,17 +1358,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 margin: '10px 0'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 1</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 1</span>
                   <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Sentir</span>
                 </div>
                 <div style={{ width: '20px', height: '1px', backgroundColor: 'var(--color-dorado-mate)' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 2</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 2</span>
                   <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Aroma</span>
                 </div>
                 <div style={{ width: '20px', height: '1px', backgroundColor: 'var(--color-dorado-mate)' }} />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 3</span>
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(234, 222, 201, 0.55)' }}>Paso 3</span>
                   <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--color-arena-tostada)' }}>Ritual</span>
                 </div>
               </div>
@@ -1404,12 +1446,37 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
         /* Responsive Overrides for Templo Home */
         @media (max-width: 767px) {
           .hero-container {
-            padding: 30px 10px !important;
+            padding: 10px 12px !important;
             min-height: auto !important;
-            margin-bottom: 30px !important;
+            margin-bottom: 24px !important;
           }
           .hero-container .container {
-            padding: 10px !important;
+            padding: 8px !important;
+          }
+          .hero-orbit-container {
+            padding: 4px 0 !important;
+          }
+          .hero-orbit-circle {
+            width: min(80vw, 300px) !important;
+            height: min(80vw, 300px) !important;
+          }
+          .hero-brand-logo {
+            max-width: 220px !important;
+          }
+          .hero-slogan {
+            font-size: 1rem !important;
+            line-height: 1.5 !important;
+            margin-top: 8px !important;
+          }
+          .hero-buttons-container {
+            flex-direction: column !important;
+            width: 100% !important;
+            gap: 12px !important;
+          }
+          .hero-buttons-container button {
+            width: 100% !important;
+            padding: 14px !important;
+            font-size: 0.85rem !important;
           }
           .categories-grid-container {
             display: flex !important;

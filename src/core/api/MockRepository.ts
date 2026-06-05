@@ -1,4 +1,4 @@
-import type { IRepository, Product, Ritual, UserProfile, Order } from './IRepository';
+import type { IRepository, Product, Category, ContentBlock, Ritual, UserProfile, Order } from './IRepository';
 
 const STORAGE_KEYS = {
   PROFILE: 'aurea_user_profile',
@@ -465,5 +465,43 @@ export class MockRepository implements IRepository {
   async getOrders(): Promise<Order[]> {
     await this.delay(450);
     return this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
+  }
+
+  // ── Métodos stub para compatibilidad con IRepository ──────────────────
+
+  async getCategories(): Promise<Category[]> {
+    await this.delay(200);
+    return [
+      { id: '1', name: 'Aromaterapia', subcategories: ['Velas', 'Inciensos', 'Brumas', 'Óleos'], sortOrder: 1, isVisible: true },
+      { id: '2', name: 'Bienestar y Spa', subcategories: ['Sales de baño', 'Arcillas'], sortOrder: 2, isVisible: true },
+      { id: '3', name: 'Hogar con intención', subcategories: ['Cerámicas', 'Textiles'], sortOrder: 3, isVisible: true },
+      { id: '4', name: 'Kits', subcategories: ['Santuario'], sortOrder: 4, isVisible: true },
+      { id: '5', name: 'Moda', subcategories: ['Prendas'], sortOrder: 5, isVisible: true },
+    ];
+  }
+
+  async saveRitual(ritual: Ritual): Promise<Ritual> {
+    return ritual;
+  }
+
+  async saveCategory(category: Category): Promise<Category> {
+    return category;
+  }
+
+  async deleteCategory(_id: string): Promise<boolean> {
+    return true;
+  }
+
+  async getContentBlocks(): Promise<ContentBlock[]> {
+    await this.delay(200);
+    return [
+      { key: 'home.hero.title', label: 'Hero — Título principal', value: { text: 'Rituales para el alma' } },
+      { key: 'home.hero.subtitle', label: 'Hero — Subtítulo', value: { text: 'Cosmética natural y objetos de intención.' } },
+      { key: 'catalog.title', label: 'Catálogo — Título', value: { text: 'Catálogo' } },
+    ];
+  }
+
+  async updateContentBlock(key: string, value: ContentBlock['value']): Promise<ContentBlock> {
+    return { key, label: key, value };
   }
 }

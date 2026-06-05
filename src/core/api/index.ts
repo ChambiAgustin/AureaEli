@@ -6,15 +6,11 @@ export * from './IRepository';
 export * from './MockRepository';
 export * from './SupabaseRepository';
 
-const useSupabase = import.meta.env?.VITE_USE_SUPABASE === 'true';
+// Usa Supabase si la URL está configurada, MockRepository como fallback
+const hasSupabase = Boolean(import.meta.env.VITE_SUPABASE_URL);
 
-// Singleton del repositorio correspondiente
-export const apiRepository: IRepository = useSupabase
+export const apiRepository: IRepository = hasSupabase
   ? new SupabaseRepository()
   : new MockRepository();
 
-console.log(
-  `[Aurea API] Inicializado repositorio en modo: ${
-    useSupabase ? 'SUPABASE (Mock/Fase 4)' : 'LOCAL_MOCK'
-  }`
-);
+console.log(`[Aurea API] Repositorio: ${hasSupabase ? 'SUPABASE ✓' : 'LOCAL_MOCK'}`);

@@ -50,6 +50,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
   const [breathCountdown, setBreathCountdown] = useState<number>(4);
   const timerRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const quizContainerRef = useRef<HTMLDivElement>(null);
 
   // Quiz Questions definition (minimalist, 3 deeply introspective questions)
   const quizQuestions: QuizQuestion[] = [
@@ -162,6 +163,9 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
 
     if (currentQuestionIndex < quizQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setTimeout(() => {
+        quizContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
     } else {
       // Resolve recommendation algorithm (majority vote, fallback to first answer)
       const counts: Record<string, number> = {};
@@ -176,13 +180,23 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
         }
       });
 
-      const selected = rituals.find((r) => r.id === winningRitualId) || rituals[0];
+      // Matching por keyword del valor de respuesta (ej: "ritual-calma" → "calma")
+      // Los IDs en Supabase son UUIDs, matcheamos por título
+      const keyword = winningRitualId.split('-').pop()?.toLowerCase() ?? '';
+      const keywordMap: Record<string, string> = {
+        calma: 'calma',
+        desconexion: 'desconex',
+        florecimiento: 'florecimiento',
+      };
+      const searchTerm = keywordMap[keyword] ?? keyword;
+      const selected = rituals.find(r => r.title.toLowerCase().includes(searchTerm)) ?? rituals[0];
       setRecommendedRitual(selected);
 
-      // Find kit products
+      // Randomizar: mezcla el pool y toma máximo 3 productos al azar
       if (selected) {
-        const matchingProducts = products.filter((p) => selected.productIds.includes(p.id));
-        setKitProducts(matchingProducts);
+        const pool = products.filter((p) => selected.productIds.includes(p.id));
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        setKitProducts(shuffled.slice(0, 3));
       }
 
       setFlowState('recommendation');
@@ -265,7 +279,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
 
       {/* 2. QUIZ FLOW */}
       {flowState === 'quiz' && (
-        <div style={{ maxWidth: '650px', margin: '0 auto', padding: '40px 20px' }}>
+        <div ref={quizContainerRef} className="quiz-mobile-fullscreen" style={{ maxWidth: '650px', margin: '0 auto', padding: '40px 20px' }}>
           
           {/* Indicador de Progreso */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
@@ -278,7 +292,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
             }}>
               {quizQuestions.map((q, idx) => (
                 <div 
-                  key={q.id}
+                   key={q.id}
                   style={{
                     width: '30px',
                     height: '3px',
@@ -293,21 +307,24 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
 
           {/* Tarjeta de Pregunta */}
           <Card 
-            className="glass-panel" 
+            className="quiz-glass-card" 
             style={{ 
               padding: '40px 32px', 
-              border: '1px solid rgba(197, 168, 128, 0.25)',
-              backgroundColor: 'rgba(35, 31, 28, 0.9)'
+              border: '1px solid rgba(79, 94, 76, 0.25)',
+              backgroundColor: 'rgba(245, 239, 228, 0.85)',
+              backdropFilter: 'blur(25px)',
+              WebkitBackdropFilter: 'blur(25px)',
+              boxShadow: '0 20px 50px rgba(79, 94, 76, 0.12)'
             }}
           >
             <Typography 
               variant="h2" 
-              color="light"
               style={{ 
                 fontSize: '1.6rem', 
                 textAlign: 'center', 
                 marginBottom: '32px',
-                lineHeight: '1.4'
+                lineHeight: '1.4',
+                color: 'var(--color-text-dark)'
               }}
             >
               {quizQuestions[currentQuestionIndex].question}
@@ -322,11 +339,11 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
                     width: '100%',
                     padding: '18px 24px',
                     borderRadius: '16px',
-                    border: '1px solid rgba(197, 168, 128, 0.2)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                    color: 'var(--color-crema-calido)',
+                    border: '1px solid rgba(79, 94, 76, 0.2)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+                    color: 'var(--color-text-dark)',
                     fontFamily: 'var(--font-sans)',
-                    fontSize: '0.9rem',
+                    fontSize: '0.95rem',
                     textAlign: 'left',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
@@ -335,13 +352,13 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
                     alignItems: 'center'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-dorado-mate)';
-                    e.currentTarget.style.backgroundColor = 'rgba(197, 168, 128, 0.05)';
+                    e.currentTarget.style.borderColor = 'var(--color-oliva-salvia)';
+                    e.currentTarget.style.backgroundColor = 'rgba(79, 94, 76, 0.08)';
                     e.currentTarget.style.transform = 'translateX(4px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(197, 168, 128, 0.2)';
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                    e.currentTarget.style.borderColor = 'rgba(79, 94, 76, 0.2)';
+                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.55)';
                     e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
@@ -663,7 +680,7 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
                   }}
                 >
                   <ShoppingBag size={18} />
-                  <span>Adquirir Kit Completo — ${kitProducts.reduce((acc, curr) => acc + curr.price, 0).toLocaleString('es-AR')}</span>
+                  <span>Adquirir Kit Completo — ${kitProducts.reduce((acc, curr) => acc + (curr.promoPrice ?? curr.price), 0).toLocaleString('es-AR')}</span>
                 </Button>
               </div>
 
@@ -725,6 +742,18 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
         @media (min-width: 768px) {
           div[style*="flexDirection: column"] {
             flex-direction: row !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .quiz-mobile-fullscreen {
+            padding: 0 !important; margin: 0 auto !important; width: 100% !important; max-width: 100% !important;
+          }
+          .quiz-glass-card {
+            border-radius: 16px !important; padding: 24px 16px !important; min-height: auto !important;
+          }
+          .quiz-glass-card button {
+            padding: 14px 16px !important;
+            font-size: 0.85rem !important;
           }
         }
       `}</style>
