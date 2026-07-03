@@ -818,7 +818,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               {/* Descripción general */}
               <div style={styles.inputGroup}>
                 <label style={styles.label}>Descripción Técnica</label>
-                <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} rows={2} style={styles.textarea} required />
+                <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)} rows={2} style={styles.textarea} />
               </div>
 
               <div style={styles.formActions}>
