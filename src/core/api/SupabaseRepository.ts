@@ -147,12 +147,17 @@ export class SupabaseRepository implements IRepository {
 
   // ── CATEGORÍAS ───────────────────────────────────────────────────────────
 
-  async getCategories(): Promise<Category[]> {
-    const { data, error } = await supabase
+  async getCategories(includeHidden = false): Promise<Category[]> {
+    let query = supabase
       .from('categories')
       .select('*')
-      .eq('is_visible', true)
       .order('sort_order', { ascending: true });
+
+    if (!includeHidden) {
+      query = query.eq('is_visible', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw new Error(`getCategories: ${error.message}`);
     return (data ?? []).map(toCategory);

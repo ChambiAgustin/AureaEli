@@ -81,7 +81,8 @@ export interface IRepository {
   deleteProduct(id: string): Promise<boolean>;
 
   // Categorías dinámicas
-  getCategories(): Promise<Category[]>;
+  // includeHidden: true para el admin, que necesita ver también las ocultas
+  getCategories(includeHidden?: boolean): Promise<Category[]>;
   saveCategory(category: Category): Promise<Category>;
   deleteCategory(id: string): Promise<boolean>;
 

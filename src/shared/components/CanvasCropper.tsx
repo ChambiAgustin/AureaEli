@@ -19,14 +19,19 @@ const OUTPUT_SIZE = 800; // Resolución final de salida
 const MAX_KB      = 220; // Límite de compresión objetivo en KB
 
 // ── Compresión inteligente ─────────────────────────────────────────────────
+// WebP comprime mejor que JPEG a igual calidad; si el navegador no soporta
+// exportar WebP (toDataURL devuelve PNG en ese caso), cae a JPEG.
 function compressCanvas(canvas: HTMLCanvasElement): string {
+  const supportsWebp = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+  const format = supportsWebp ? 'image/webp' : 'image/jpeg';
+
   let quality = 0.82;
-  let result  = canvas.toDataURL('image/jpeg', quality);
+  let result  = canvas.toDataURL(format, quality);
 
   // Si pesa más del objetivo, reduce quality iterativamente hasta 0.60
   while (result.length > MAX_KB * 1024 * 1.37 && quality > 0.60) {
     quality -= 0.05;
-    result   = canvas.toDataURL('image/jpeg', quality);
+    result   = canvas.toDataURL(format, quality);
   }
 
   return result;
@@ -44,12 +49,14 @@ function base64ToFile(base64: string, filename: string): File {
 
 // ── Sube imagen a Supabase Storage y retorna URL pública ──────────────────
 async function uploadToStorage(base64: string): Promise<string> {
-  const filename = `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+  const mime     = base64.match(/^data:(image\/\w+);/)?.[1] ?? 'image/jpeg';
+  const ext      = mime.split('/')[1];
+  const filename = `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const file     = base64ToFile(base64, filename);
 
   const { error } = await supabase.storage
     .from('product-images')
-    .upload(filename, file, { contentType: 'image/jpeg', upsert: false });
+    .upload(filename, file, { contentType: mime, upsert: false });
 
   if (error) throw new Error(`Storage upload: ${error.message}`);
 

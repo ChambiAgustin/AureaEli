@@ -469,7 +469,7 @@ export class MockRepository implements IRepository {
 
   // ── Métodos stub para compatibilidad con IRepository ──────────────────
 
-  async getCategories(): Promise<Category[]> {
+  async getCategories(_includeHidden = false): Promise<Category[]> {
     await this.delay(200);
     return [
       { id: '1', name: 'Aromaterapia', subcategories: ['Velas', 'Inciensos', 'Brumas', 'Óleos'], sortOrder: 1, isVisible: true },

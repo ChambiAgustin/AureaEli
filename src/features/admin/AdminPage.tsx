@@ -94,7 +94,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     try {
       const [prods, cats, blocks, rits] = await Promise.all([
         apiRepository.getProducts(),
-        apiRepository.getCategories(),
+        apiRepository.getCategories(true),
         apiRepository.getContentBlocks(),
         apiRepository.getRituals(),
       ]);
@@ -146,7 +146,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         setContentBlocks(blocks);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, async () => {
-        const cats = await apiRepository.getCategories();
+        const cats = await apiRepository.getCategories(true);
         setCategories(cats);
       })
       .subscribe();
@@ -290,7 +290,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       await apiRepository.saveCategory(catData);
       triggerToast(selectedCategory ? 'Categoría actualizada.' : 'Categoría creada.');
       setIsCatFormOpen(false);
-      const cats = await apiRepository.getCategories();
+      const cats = await apiRepository.getCategories(true);
       setCategories(cats);
     } catch (err) {
       triggerToast('Error al guardar categoría.');
@@ -301,7 +301,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     if (!window.confirm(`¿Eliminás la categoría "${name}"?`)) return;
     try {
       await apiRepository.deleteCategory(id);
-      const cats = await apiRepository.getCategories();
+      const cats = await apiRepository.getCategories(true);
       setCategories(cats);
       triggerToast('Categoría eliminada.');
     } catch (err) {
