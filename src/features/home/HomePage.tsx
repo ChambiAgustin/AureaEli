@@ -28,6 +28,7 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState<boolean>(true);
 
   // Breathing Guide States
@@ -116,9 +117,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const allProducts = await apiRepository.getProducts();
+        const products = await apiRepository.getProducts();
+        setAllProducts(products);
         // Filter those marked as isFeatured or isNew
-        const selected = allProducts.filter(p => p.isFeatured || p.isNew).slice(0, 8);
+        const selected = products.filter(p => p.isFeatured || p.isNew).slice(0, 8);
         setFeaturedProducts(selected);
       } catch (error) {
         console.error('Error fetching featured products:', error);
@@ -184,42 +186,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
     };
   }, [breathActive, breathPhase]);
 
-  // Carousel Items
-  const bestSellers = [
+  // Carousel Items: productos reales del catálogo (destacados primero)
+  // Las reseñas son copy de marketing, independientes del producto mostrado
+  const testimonialCopy = [
     {
-      id: 'bs-1',
-      name: 'Bruma Áurea Sahasrara',
       rating: 5,
       sales: 142,
       review: '“Un aroma sagrado que te ancla de inmediato. Lo uso al comenzar y al terminar el día laboral para limpiar mi campo áurico.”',
-      author: 'Sofía M., Terapeuta Holística',
-      price: 8400,
-      imageUrl: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?q=80&w=600&auto=format&fit=crop',
-      category: 'Aromaterapia'
+      author: 'Sofía M., Terapeuta Holística'
     },
     {
-      id: 'bs-2',
-      name: 'Vela Cera de Abejas y Copal',
       rating: 5,
       sales: 98,
       review: '“No genera humo negro y el olor a resina pura te envuelve en una manta de total seguridad. Hermosa terminación artesanal.”',
-      author: 'Bautista L., Diseñador de Interiores',
-      price: 6900,
-      imageUrl: 'https://images.unsplash.com/photo-1603006905003-be475563bc59?q=80&w=600&auto=format&fit=crop',
-      category: 'Hogar con intención'
+      author: 'Bautista L., Diseñador de Interiores'
     },
     {
-      id: 'bs-3',
-      name: 'Sahumerios de Sándalo Silvestre',
       rating: 4,
       sales: 210,
-      review: '“El sándalo es genuino y su combustión lenta es perfecta para meditar. Es un sahumerio que se siente de verdad premium.”',
-      author: 'Gabriela K., Instructora de Yoga',
-      price: 4500,
-      imageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=600&auto=format&fit=crop',
-      category: 'Aromaterapia'
+      review: '“El sándalo es genuino y su combustión lenta es perfecta para meditar. Se siente de verdad premium.”',
+      author: 'Gabriela K., Instructora de Yoga'
     }
   ];
+
+  const featuredForCarousel = allProducts.filter(p => p.isFeatured);
+  const bestSellers = (featuredForCarousel.length >= 3 ? featuredForCarousel : allProducts).slice(0, 3);
+  const activeBestSeller = bestSellers.length > 0 ? bestSellers[activeCarouselIndex % bestSellers.length] : null;
+  const activeTestimonial = testimonialCopy[activeCarouselIndex % testimonialCopy.length];
 
   const handlePrevCarousel = () => {
     setActiveCarouselIndex((prev) => (prev === 0 ? bestSellers.length - 1 : prev - 1));
@@ -251,19 +244,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
     }
   ];
 
-  // Helper to add entire Kit to Cart
-  const handleAddKitToCart = async () => {
-    // In our mocks, let's find matching products or mock products to represent the kit
-    try {
-      const allProducts = await apiRepository.getProducts();
-      // Add first 2 products as sample items from the kit to showcase reactive cart action
-      const itemsToAdd = allProducts.slice(0, 2);
-      itemsToAdd.forEach(p => onAddToCart(p));
-      // Trigger user confirmation
-      alert('¡Fantástico! Agregamos los productos del "Kit de Calma Nocturna" a tu altar de compras.');
-    } catch (e) {
-      console.error(e);
-    }
+  // Kit: tríada de productos reales con total derivado de sus precios
+  const kitProducts = allProducts.slice(0, 3);
+  const kitTotal = kitProducts.reduce((acc, p) => acc + (p.promoPrice ?? p.price), 0);
+
+  const handleAddKitToCart = () => {
+    if (kitProducts.length === 0) return;
+    kitProducts.forEach(p => onAddToCart(p));
+    alert('¡Fantástico! Agregamos los productos del "Kit de Calma Nocturna" a tu altar de compras.');
   };
 
   return (
@@ -747,7 +735,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '12px' }}>
                     <div>
                       <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Inversión en calma</span>
-                      <Typography variant="h3" color="gold" style={{ fontSize: '1.15rem' }}>${product.price.toLocaleString('es-AR')}</Typography>
+                      <Typography variant="h3" color="gold" style={{ fontSize: '1.15rem' }}>${(product.promoPrice ?? product.price).toLocaleString('es-AR')}</Typography>
                     </div>
                     <Button
                       variant="primary"
@@ -880,6 +868,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
       </section>
 
       {/* 6. LOS RITUALES MÁS ELEGIDOS (CARRUSEL MANUAL) */}
+      {activeBestSeller && (
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
         <div className="container" style={{ padding: '0 24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
@@ -960,8 +949,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
             <div className="grid-2" style={{ alignItems: 'center', gap: '32px' }}>
               <div style={{ height: '280px', borderRadius: '16px', overflow: 'hidden' }}>
                 <img
-                  src={bestSellers[activeCarouselIndex].imageUrl}
-                  alt={bestSellers[activeCarouselIndex].name}
+                  src={activeBestSeller.imageUrl}
+                  alt={activeBestSeller.name}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
@@ -973,16 +962,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                       key={i}
                       size={16}
                       color="var(--color-dorado-mate)"
-                      fill={i < bestSellers[activeCarouselIndex].rating ? 'var(--color-dorado-mate)' : 'none'}
+                      fill={i < activeTestimonial.rating ? 'var(--color-dorado-mate)' : 'none'}
                     />
                   ))}
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginLeft: '8px' }}>
-                    ({bestSellers[activeCarouselIndex].sales} almas conformes)
+                    ({activeTestimonial.sales} almas conformes)
                   </span>
                 </div>
 
-                <Typography variant="caption" color="gold">{bestSellers[activeCarouselIndex].category}</Typography>
-                <Typography variant="h2" style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)' }}>{bestSellers[activeCarouselIndex].name}</Typography>
+                <Typography variant="caption" color="gold">{activeBestSeller.category}</Typography>
+                <Typography variant="h2" style={{ fontSize: '1.8rem', color: 'var(--color-text-dark)' }}>{activeBestSeller.name}</Typography>
 
                 <p style={{
                   fontFamily: 'var(--font-serif)',
@@ -991,11 +980,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   fontStyle: 'italic',
                   color: 'var(--color-text-dark)'
                 }}>
-                  {bestSellers[activeCarouselIndex].review}
+                  {activeTestimonial.review}
                 </p>
 
                 <div>
-                  <Typography variant="body" weight="semibold" style={{ display: 'block', fontSize: '0.9rem' }}>{bestSellers[activeCarouselIndex].author}</Typography>
+                  <Typography variant="body" weight="semibold" style={{ display: 'block', fontSize: '0.9rem' }}>{activeTestimonial.author}</Typography>
                   <Typography variant="body-sm" color="gold" style={{ fontSize: '0.8rem' }}>Comprador verificado</Typography>
                 </div>
 
@@ -1003,22 +992,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={async () => {
-                      try {
-                        const allProducts = await apiRepository.getProducts();
-                        const prod = allProducts.find(p => p.name.includes(bestSellers[activeCarouselIndex].name.split(' ')[0]));
-                        if (prod) {
-                          onAddToCart(prod);
-                        } else {
-                          // Fallback to adding catalog
-                          onNavigate('catalog');
-                        }
-                      } catch (e) {
-                        onNavigate('catalog');
-                      }
-                    }}
+                    onClick={() => onAddToCart(activeBestSeller)}
                   >
-                    Llevar este elemento — ${bestSellers[activeCarouselIndex].price.toLocaleString('es-AR')}
+                    Llevar este elemento — ${(activeBestSeller.promoPrice ?? activeBestSeller.price).toLocaleString('es-AR')}
                   </Button>
                 </div>
               </div>
@@ -1050,6 +1026,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
           </div>
         </div>
       </section>
+      )}
 
       {/* 7. KIT DESTACADO: KIT DE CALMA NOCTURNA */}
       <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
@@ -1150,9 +1127,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                   ))}
                 </div>
 
-                <Button variant="primary" size="lg" onClick={handleAddKitToCart}>
-                  Llevar Kit Completo — $19.800
-                </Button>
+                {kitProducts.length > 0 && (
+                  <Button variant="primary" size="lg" onClick={handleAddKitToCart}>
+                    Llevar Kit Completo — ${kitTotal.toLocaleString('es-AR')}
+                  </Button>
+                )}
               </div>
 
               {/* Lado derecho: Imagen Editorial de Calma Nocturna */}

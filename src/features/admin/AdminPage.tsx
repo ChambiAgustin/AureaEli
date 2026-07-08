@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiRepository } from '../../core/api';
 import { supabase } from '../../core/supabase/client';
+import type { Session } from '@supabase/supabase-js';
 import type { Product, Category, ContentBlock, Ritual } from '../../core/api/IRepository';
 import { CanvasCropper } from '../../shared/components/CanvasCropper';
 import Typography from '../../shared/components/Typography';
@@ -18,6 +19,41 @@ interface AdminPageProps {
 }
 
 type AdminTab = 'products' | 'content' | 'categories' | 'rituals';
+
+// ── Borrador editable de los campos de un ritual ────────────────────────────
+type RitualFieldDraft = {
+  title: string;
+  description: string;
+  durationMinutes: number;
+  steps: string;    // un paso por línea (textarea)
+  audioUrl: string;
+};
+
+const ritualToDraft = (r: Ritual): RitualFieldDraft => ({
+  title: r.title,
+  description: r.description,
+  durationMinutes: r.durationMinutes,
+  steps: r.steps.join('\n'),
+  audioUrl: r.audioUrl ?? '',
+});
+
+// ── Sube un MP3 a Supabase Storage y retorna URL pública ────────────────────
+const MAX_AUDIO_MB = 10;
+
+async function uploadRitualAudio(file: File): Promise<string> {
+  const isMp3 = file.name.toLowerCase().endsWith('.mp3') || file.type === 'audio/mpeg' || file.type === 'audio/mp3';
+  if (!isMp3) throw new Error('El archivo debe ser un MP3.');
+  if (file.size > MAX_AUDIO_MB * 1024 * 1024) throw new Error(`El audio supera el máximo de ${MAX_AUDIO_MB} MB.`);
+
+  const filename = `ritual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.mp3`;
+  const { error } = await supabase.storage
+    .from('ritual-audio')
+    .upload(filename, file, { contentType: 'audio/mpeg', upsert: false });
+
+  if (error) throw new Error(`Storage upload: ${error.message}`);
+
+  return supabase.storage.from('ritual-audio').getPublicUrl(filename).data.publicUrl;
+}
 
 export const AdminPage: React.FC<AdminPageProps> = ({
   onProductsChange,
@@ -44,7 +80,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   // ── Estado del editor de rituales ────────────────────────────────────────
   const [expandedRitualId, setExpandedRitualId] = useState<string | null>(null);
   const [ritualDraftIds, setRitualDraftIds] = useState<Record<string, string[]>>({});
+  const [ritualFieldDrafts, setRitualFieldDrafts] = useState<Record<string, RitualFieldDraft>>({});
   const [savingRitualId, setSavingRitualId] = useState<string | null>(null);
+  const [uploadingAudioId, setUploadingAudioId] = useState<string | null>(null);
 
   // ── Formulario Producto ───────────────────────────────────────────────────
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -102,10 +140,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       setCategories(cats);
       setContentBlocks(blocks);
       setRituals(rits);
-      // Inicializar drafts con los IDs actuales de cada ritual
+      // Inicializar drafts con los IDs y campos actuales de cada ritual
       const drafts: Record<string, string[]> = {};
-      rits.forEach(r => { drafts[r.id] = [...r.productIds]; });
+      const fieldDrafts: Record<string, RitualFieldDraft> = {};
+      rits.forEach(r => {
+        drafts[r.id] = [...r.productIds];
+        fieldDrafts[r.id] = ritualToDraft(r);
+      });
       setRitualDraftIds(drafts);
+      setRitualFieldDrafts(fieldDrafts);
       if (prods.length > 0 && cats.length > 0) {
         setFormCategory(cats[0]?.name ?? '');
       }
@@ -116,18 +159,40 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   }, []);
 
-  // ── Verificar sesión activa al montar ────────────────────────────────────
+  // ── Verificar sesión activa Y permiso de admin al montar ─────────────────
+  // Tener sesión no alcanza: solo cuentas en `admin_users` (otorgadas por
+  // scripts/setup-customer-auth.mjs con la Service Role Key) entran acá.
+  // Sin esto, cualquier cliente que se registre en la web entraría al admin.
+  const verifyAdminAccess = useCallback(async (session: Session | null): Promise<boolean> => {
+    if (!session) { setIsAuthenticated(false); return false; }
+
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (error || !data) {
+      await supabase.auth.signOut();
+      setAuthError('Esta cuenta no tiene acceso al Altar Administrativo.');
+      setIsAuthenticated(false);
+      return false;
+    }
+    setIsAuthenticated(true);
+    return true;
+  }, []);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
+      verifyAdminAccess(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
+      verifyAdminAccess(session);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [verifyAdminAccess]);
 
   // ── Realtime subscription ─────────────────────────────────────────────────
   useEffect(() => {
@@ -159,13 +224,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     e.preventDefault();
     setAuthError('');
     setAuthLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setAuthLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      setAuthLoading(false);
       setAuthError('Credenciales incorrectas. Verificá tu email y contraseña.');
-    } else {
-      triggerToast('Acceso concedido. Bienvenido al altar.');
+      return;
     }
+    const isAdmin = await verifyAdminAccess(data.session);
+    setAuthLoading(false);
+    if (isAdmin) triggerToast('Acceso concedido. Bienvenido al altar.');
   };
 
   const handleLogout = async () => {
@@ -245,7 +312,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       if (onProductsChange) onProductsChange();
     } catch (err) {
       console.error('Error saving product:', err);
-      triggerToast('Hubo un error al guardar el producto.');
+      const msg = err instanceof Error ? ` ${err.message}` : '';
+      triggerToast(`Hubo un error al guardar el producto.${msg}`);
     }
   };
 
@@ -341,17 +409,54 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const handleSaveRitual = async (ritual: Ritual) => {
+    const fields = ritualFieldDrafts[ritual.id];
+    if (fields && !fields.title.trim()) { triggerToast('El título del ritual es indispensable.'); return; }
+
     setSavingRitualId(ritual.id);
     try {
-      const updated = { ...ritual, productIds: ritualDraftIds[ritual.id] ?? ritual.productIds };
+      const updated: Ritual = {
+        ...ritual,
+        ...(fields ? {
+          title: fields.title.trim(),
+          description: fields.description,
+          durationMinutes: Number(fields.durationMinutes) || 0,
+          steps: fields.steps.split('\n').map(s => s.trim()).filter(Boolean),
+          audioUrl: fields.audioUrl.trim(),
+        } : {}),
+        productIds: ritualDraftIds[ritual.id] ?? ritual.productIds,
+      };
       await apiRepository.saveRitual(updated);
       setRituals(prev => prev.map(r => r.id === ritual.id ? updated : r));
-      triggerToast(`Ritual "${ritual.title}" actualizado.`);
+      triggerToast(`Ritual "${updated.title}" actualizado.`);
       setExpandedRitualId(null);
     } catch (err) {
-      triggerToast('Error al guardar el ritual.');
+      console.error('Error saving ritual:', err);
+      const msg = err instanceof Error ? ` ${err.message}` : '';
+      triggerToast(`Error al guardar el ritual.${msg}`);
     } finally {
       setSavingRitualId(null);
+    }
+  };
+
+  const updateRitualField = (ritualId: string, patch: Partial<RitualFieldDraft>) => {
+    setRitualFieldDrafts(prev => ({ ...prev, [ritualId]: { ...prev[ritualId], ...patch } }));
+  };
+
+  const handleAudioFileChange = async (ritualId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite re-seleccionar el mismo archivo
+    if (!file) return;
+
+    setUploadingAudioId(ritualId);
+    try {
+      const url = await uploadRitualAudio(file);
+      updateRitualField(ritualId, { audioUrl: url });
+      triggerToast('Audio subido ✓ No olvides guardar el ritual.');
+    } catch (err) {
+      console.error('Error uploading audio:', err);
+      triggerToast(err instanceof Error ? err.message : 'Error al subir el audio.');
+    } finally {
+      setUploadingAudioId(null);
     }
   };
 
@@ -851,6 +956,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
               {rituals.map(ritual => {
                 const isExpanded = expandedRitualId === ritual.id;
                 const draftIds = ritualDraftIds[ritual.id] ?? ritual.productIds;
+                const fieldDraft = ritualFieldDrafts[ritual.id] ?? ritualToDraft(ritual);
                 const linkedProducts = products.filter(p => draftIds.includes(p.id));
                 const unlinkedProducts = products.filter(p => !draftIds.includes(p.id));
 
@@ -882,6 +988,58 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                     {/* Editor expandido */}
                     {isExpanded && (
                       <div style={{ padding: '20px', background: 'rgba(250,246,238,0.5)', borderTop: '1px solid rgba(176,142,98,0.12)' }}>
+
+                        {/* Campos del ritual */}
+                        <p style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+                          Datos del ritual
+                        </p>
+                        <div style={styles.formRow}>
+                          <div style={{ ...styles.inputGroup, flex: 2, minWidth: 200 }}>
+                            <label style={styles.label}>Título</label>
+                            <input type="text" value={fieldDraft.title} onChange={e => updateRitualField(ritual.id, { title: e.target.value })} style={styles.input} />
+                          </div>
+                          <div style={{ ...styles.inputGroup, flex: 1, minWidth: 120 }}>
+                            <label style={styles.label}>Duración (min)</label>
+                            <input type="number" min="0" value={fieldDraft.durationMinutes} onChange={e => updateRitualField(ritual.id, { durationMinutes: Number(e.target.value) })} style={styles.input} />
+                          </div>
+                        </div>
+                        <div style={styles.inputGroup}>
+                          <label style={styles.label}>Descripción</label>
+                          <textarea rows={2} value={fieldDraft.description} onChange={e => updateRitualField(ritual.id, { description: e.target.value })} style={styles.textarea} />
+                        </div>
+                        <div style={styles.inputGroup}>
+                          <label style={styles.label}>Pasos (uno por línea)</label>
+                          <textarea rows={4} value={fieldDraft.steps} onChange={e => updateRitualField(ritual.id, { steps: e.target.value })} style={styles.textarea} />
+                        </div>
+                        <div style={{ ...styles.inputGroup, marginBottom: 20 }}>
+                          <label style={styles.label}>Audio del ritual (MP3)</label>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                              type="text"
+                              value={fieldDraft.audioUrl}
+                              onChange={e => updateRitualField(ritual.id, { audioUrl: e.target.value })}
+                              placeholder="URL del audio (o subí un MP3 →)"
+                              style={{ ...styles.input, flex: 1, minWidth: 220 }}
+                            />
+                            <input
+                              type="file"
+                              accept="audio/mpeg,.mp3"
+                              id={`ritual-audio-file-${ritual.id}`}
+                              style={{ display: 'none' }}
+                              onChange={e => handleAudioFileChange(ritual.id, e)}
+                            />
+                            <label
+                              htmlFor={`ritual-audio-file-${ritual.id}`}
+                              style={{ ...styles.blockEditBtn, opacity: uploadingAudioId === ritual.id ? 0.6 : 1, pointerEvents: uploadingAudioId === ritual.id ? 'none' : 'auto' }}
+                            >
+                              {uploadingAudioId === ritual.id ? 'Subiendo audio...' : '♪ Subir MP3'}
+                            </label>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>Máximo {MAX_AUDIO_MB} MB. Se reproduce en la página de Rituales.</span>
+                          {fieldDraft.audioUrl && (
+                            <audio controls src={fieldDraft.audioUrl} style={{ width: '100%', marginTop: 4 }} />
+                          )}
+                        </div>
 
                         {/* Productos EN el pool */}
                         <p style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--color-text-muted)', marginBottom: 10 }}>
@@ -930,6 +1088,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                             style={styles.blockCancelBtn}
                             onClick={() => {
                               setRitualDraftIds(prev => ({ ...prev, [ritual.id]: [...ritual.productIds] }));
+                              setRitualFieldDrafts(prev => ({ ...prev, [ritual.id]: ritualToDraft(ritual) }));
                               setExpandedRitualId(null);
                             }}
                           >
@@ -940,7 +1099,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                             onClick={() => handleSaveRitual(ritual)}
                             disabled={savingRitualId === ritual.id}
                           >
-                            <Save size={13} /> {savingRitualId === ritual.id ? 'Guardando...' : 'Guardar pool'}
+                            <Save size={13} /> {savingRitualId === ritual.id ? 'Guardando...' : 'Guardar ritual'}
                           </button>
                         </div>
                       </div>

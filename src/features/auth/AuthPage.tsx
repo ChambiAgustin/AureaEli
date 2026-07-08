@@ -5,6 +5,7 @@ import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { UserProfile } from '../../core/api';
+import { supabase } from '../../core/supabase/client';
 
 interface AuthPageProps {
   onLoginSuccess: (profile: UserProfile) => void;
@@ -35,43 +36,38 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     }
 
     setLoading(true);
+    const userEmail = email.toLowerCase().trim();
 
     try {
-      // Simular delay inmersivo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
       if (isLogin) {
-        // En modo local mock, recuperamos el perfil guardado o el por defecto
+        const { error } = await supabase.auth.signInWithPassword({ email: userEmail, password });
+        if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : error.message);
+
         const profile = await apiRepository.getUserProfile();
-        // Si el usuario guardado tiene un mail diferente al ingresado, mockeamos un perfil con ese email
-        const userEmail = email.toLowerCase().trim();
-        const activeProfile: UserProfile = {
-          ...profile,
-          name: userEmail === 'alma@aureaelizabeth.com' ? profile.name : name || 'Alma Buscadora',
-          email: userEmail
-        };
-        await apiRepository.updateUserProfile(activeProfile);
-        onLoginSuccess(activeProfile);
-        triggerToast(`Bienvenida de regreso, ${activeProfile.name}.`);
+        onLoginSuccess(profile);
+        triggerToast(`Bienvenida de regreso, ${profile.name}.`);
       } else {
-        // Registro de un nuevo perfil ritual
-        const newProfile: UserProfile = {
-          id: `user-${Math.random().toString(36).substr(2, 9)}`,
-          name: name.trim(),
-          email: email.toLowerCase().trim(),
-          stressLevel: 'medium',
-          aromaPreferences: ['Lavanda'],
-          skinType: 'normal',
-          completedRituals: [],
-          favorites: []
-        };
-        await apiRepository.updateUserProfile(newProfile);
-        onLoginSuccess(newProfile);
-        triggerToast(`Alma registrada con éxito. Iniciando diario de calma...`);
+        const { data, error } = await supabase.auth.signUp({
+          email: userEmail,
+          password,
+          options: { data: { name: name.trim() } },
+        });
+        if (error) throw new Error(error.message);
+
+        if (!data.session) {
+          // El proyecto pide confirmar el email antes de dar sesión
+          triggerToast('Alma registrada. Revisá tu correo para confirmar la cuenta antes de ingresar.');
+          setIsLogin(true);
+          return;
+        }
+
+        const profile = await apiRepository.getUserProfile();
+        onLoginSuccess(profile);
+        triggerToast('Alma registrada con éxito. Iniciando diario de calma...');
       }
     } catch (err) {
       console.error('Error during ritual authentication:', err);
-      triggerToast('Error al conectar con tu espacio sagrado.');
+      triggerToast(err instanceof Error ? err.message : 'Error al conectar con tu espacio sagrado.');
     } finally {
       setLoading(false);
     }

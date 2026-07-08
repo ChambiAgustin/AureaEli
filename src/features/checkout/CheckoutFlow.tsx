@@ -17,6 +17,7 @@ import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { Product, Order, UserProfile } from '../../core/api';
+import { WHATSAPP_URL } from '../../shared/constants';
 
 interface CheckoutFlowProps {
   isOpen: boolean;
@@ -59,7 +60,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
 
-  const totalCart = cartItems.reduce((acc, curr) => acc + curr.product.price * curr.quantity, 0);
+  const totalCart = cartItems.reduce((acc, curr) => acc + (curr.product.promoPrice ?? curr.product.price) * curr.quantity, 0);
 
   // Breath Pause Logic (Step 1)
   useEffect(() => {
@@ -159,13 +160,13 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       setCreatedOrder(order);
       
       if (paymentMethod === 'whatsapp') {
-        const itemsList = cartItems.map(i => `- ${i.quantity}x ${i.product.name}`).join('\n');
+        const itemsList = cartItems.map(i => `- ${i.quantity}x ${i.product.name} ($${(i.product.promoPrice ?? i.product.price).toLocaleString('es-AR')})`).join('\n');
         const waMsg = `Hola Aurea Elizabeth. Quiero coordinar mi pedido Ritual (Orden: ${order.id}):\n\n${itemsList}\n\nEnvío a: ${order.address}\nTotal: $${totalCart.toLocaleString('es-AR')}`;
         const encodedMsg = encodeURIComponent(waMsg);
-        
+
         triggerToast('Redirigiendo a Asistencia por WhatsApp...');
         setTimeout(() => {
-          window.open(`https://wa.me/5491100000000?text=${encodedMsg}`, '_blank');
+          window.open(`${WHATSAPP_URL}?text=${encodedMsg}`, '_blank');
           setStep('success');
           onOrderComplete(order);
         }, 1500);

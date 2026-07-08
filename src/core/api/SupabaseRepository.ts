@@ -84,6 +84,19 @@ function toContentBlock(row: Record<string, unknown>): ContentBlock {
   };
 }
 
+function toProfile(row: Record<string, unknown>): UserProfile {
+  return {
+    id: row.id as string,
+    name: (row.name as string) ?? '',
+    email: (row.email as string) ?? '',
+    stressLevel: (row.stress_level as string) ?? 'medium',
+    aromaPreferences: (row.aroma_preferences as string[]) ?? [],
+    skinType: (row.skin_type as string) ?? 'normal',
+    completedRituals: (row.completed_rituals as string[]) ?? [],
+    favorites: (row.favorites as string[]) ?? [],
+  };
+}
+
 // ─── Repositorio ──────────────────────────────────────────────────────────
 
 export class SupabaseRepository implements IRepository {
@@ -293,23 +306,63 @@ export class SupabaseRepository implements IRepository {
   }
 
   // ── USUARIO ──────────────────────────────────────────────────────────────
+  // El perfil vive en la tabla `profiles`, con RLS que solo deja a cada
+  // usuario leer/escribir su propia fila (auth.uid() = id).
 
   async getUserProfile(): Promise<UserProfile> {
-    // Por ahora retorna perfil por defecto — en próxima fase se conecta a Supabase Auth
-    return {
-      id: 'user-default',
-      name: 'Alma Aurea',
-      email: 'alma@aureaelizabeth.com',
-      stressLevel: 'high',
-      aromaPreferences: ['Lavanda', 'Sándalo', 'Herbal'],
-      skinType: 'sensitive',
-      completedRituals: [],
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('No hay sesión activa.');
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (error) throw new Error(`getUserProfile: ${error.message}`);
+    if (data) return toProfile(data);
+
+    // Primer login tras el registro: creamos la fila de perfil con defaults
+    const defaults = {
+      id: user.id,
+      name: (user.user_metadata?.name as string) || 'Alma Aurea',
+      email: user.email ?? '',
+      stress_level: 'medium',
+      aroma_preferences: [],
+      skin_type: 'normal',
+      completed_rituals: [],
       favorites: [],
     };
+    const { data: created, error: insertErr } = await supabase
+      .from('profiles')
+      .insert(defaults)
+      .select()
+      .single();
+    if (insertErr) throw new Error(`getUserProfile (create): ${insertErr.message}`);
+    return toProfile(created);
   }
 
   async updateUserProfile(profile: UserProfile): Promise<UserProfile> {
-    return profile;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('No hay sesión activa.');
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        name: profile.name,
+        stress_level: profile.stressLevel,
+        aroma_preferences: profile.aromaPreferences,
+        skin_type: profile.skinType,
+        completed_rituals: profile.completedRituals,
+        favorites: profile.favorites,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`updateUserProfile: ${error.message}`);
+    return toProfile(data);
   }
 
   // ── ÓRDENES ──────────────────────────────────────────────────────────────
@@ -318,10 +371,12 @@ export class SupabaseRepository implements IRepository {
     orderData: Omit<Order, 'id' | 'createdAt' | 'status' | 'trackingNumber'>
   ): Promise<Order> {
     const trackingNumber = `AR-${Math.floor(100000000 + Math.random() * 900000000)}`;
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { data, error } = await supabase
       .from('orders')
       .insert({
+        user_id: user?.id ?? null, // null = compra como invitada/o (checkout no exige login)
         user_profile: orderData.userProfile,
         items: orderData.items,
         total: orderData.total,

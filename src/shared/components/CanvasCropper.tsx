@@ -242,7 +242,8 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
       onCrop(url);
     } catch (err) {
       console.error(err);
-      setUploadErr('Error al subir la imagen. Intentá de nuevo.');
+      const msg = err instanceof Error ? err.message : 'Error desconocido';
+      setUploadErr(`Error al subir la imagen: ${msg}`);
       setUploading(false);
     }
   };

@@ -11,10 +11,12 @@ import ProfilePage from './features/profile/ProfilePage';
 import AuthPage from './features/auth/AuthPage';
 import { AdminPage } from './features/admin/AdminPage';
 import { apiRepository } from './core/api';
+import { supabase } from './core/supabase/client';
 import type { Product, UserProfile, Order } from './core/api/IRepository';
 import logoImg from './assets/logo.png';
 import sloganImg from './assets/slogan.png';
 import { InteractiveParticles } from './shared/components/InteractiveParticles';
+import { WHATSAPP_URL } from './shared/constants';
 import {
   Home,
   Sparkles,
@@ -140,9 +142,16 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [activeTab]);
 
-  // Load User Profile and orders on mount
+  // Cargar perfil y órdenes cuando hay una sesión real de Supabase Auth,
+  // y limpiarlos al cerrar sesión (antes esto era un perfil mockeado fijo)
   useEffect(() => {
-    const loadAppData = async () => {
+    const loadForSession = async (hasSession: boolean) => {
+      if (!hasSession) {
+        setUserProfile(null);
+        setFavorites([]);
+        setOrders([]);
+        return;
+      }
       try {
         const profile = await apiRepository.getUserProfile();
         setUserProfile(profile);
@@ -154,7 +163,16 @@ function App() {
         console.error('Error loading initial app data:', err);
       }
     };
-    loadAppData();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      loadForSession(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadForSession(!!session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Home Breathing timer effect
@@ -569,7 +587,7 @@ function App() {
                 <span>almas@aureaelizabeth.com</span>
               </div>
               <a
-                href="https://wa.me/5493875218180"
+                href={WHATSAPP_URL}
                 target="_blank"
                 rel="noreferrer"
                 style={{

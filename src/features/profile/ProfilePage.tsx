@@ -19,6 +19,7 @@ import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { Product, UserProfile, Order } from '../../core/api';
+import { supabase } from '../../core/supabase/client';
 
 interface ProfilePageProps {
   userProfile: UserProfile | null;
@@ -201,19 +202,34 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 <div>
                   <Typography variant="h3" style={{ fontSize: '1.4rem' }}>{userProfile.name}</Typography>
                   <Typography variant="body-sm" color="muted" style={{ display: 'block', marginBottom: '6px' }}>{userProfile.email}</Typography>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-dorado-mate)',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      textDecoration: 'underline'
-                    }}
-                  >
-                    Editar Nombre
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-dorado-mate)',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Editar Nombre
+                    </button>
+                    <button
+                      onClick={() => supabase.auth.signOut()}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--color-text-muted)',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Cerrar sesión
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
