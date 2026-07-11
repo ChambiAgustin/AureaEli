@@ -872,12 +872,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'relative',
-              maxWidth: '90%',
-              maxHeight: '85%',
+              maxWidth: 'min(90vw, 600px)',
+              maxHeight: '80vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
               borderRadius: '24px',
               overflow: 'hidden',
-              border: '1px solid rgba(197, 168, 128, 0.15)',
+              border: '1.5px solid var(--color-dorado-mate, #c5a880)',
               backgroundColor: 'var(--color-tierra-profunda, #0f0c0b)'
             }}
           >
@@ -886,10 +889,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               alt="Preview" 
               style={{
                 display: 'block',
-                maxWidth: 'min(75vw, 600px)',
-                maxHeight: '75vh',
+                width: 'auto',
+                height: 'auto',
+                maxWidth: '100%',
+                maxHeight: '100%',
                 objectFit: 'contain',
-                border: '1.5px solid var(--color-dorado-mate, #c5a880)',
                 backgroundColor: 'rgba(35, 31, 28, 0.45)'
               }}
             />

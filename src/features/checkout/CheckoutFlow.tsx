@@ -161,7 +161,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       
       if (paymentMethod === 'whatsapp') {
         const itemsList = cartItems.map(i => `- ${i.quantity}x ${i.product.name} ($${(i.product.promoPrice ?? i.product.price).toLocaleString('es-AR')})`).join('\n');
-        const waMsg = `Hola Aurea Elizabeth. Quiero coordinar mi pedido Ritual (Orden: ${order.id}):\n\n${itemsList}\n\nEnvío a: ${order.address}\nTotal: $${totalCart.toLocaleString('es-AR')}`;
+        const waMsg = `Hola Aurea Elizabeth. Quiero coordinar mi pedido Ritual:\n\n${itemsList}\n\nEnvío a: ${order.address}\nTotal: $${totalCart.toLocaleString('es-AR')} (falta calcular el envío)`;
         const encodedMsg = encodeURIComponent(waMsg);
 
         triggerToast('Redirigiendo a Asistencia por WhatsApp...');
