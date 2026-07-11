@@ -165,11 +165,10 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         const encodedMsg = encodeURIComponent(waMsg);
 
         triggerToast('Redirigiendo a Asistencia por WhatsApp...');
-        setTimeout(() => {
-          window.open(`${WHATSAPP_URL}?text=${encodedMsg}`, '_blank');
-          setStep('success');
-          onOrderComplete(order);
-        }, 1500);
+        const whatsappUrl = `${WHATSAPP_URL}?text=${encodedMsg}`;
+        window.location.href = whatsappUrl;
+        setStep('success');
+        onOrderComplete(order);
       } else {
         // Simular canalización de MercadoPago
         triggerToast('Conectando con pasarela segura de MercadoPago...');

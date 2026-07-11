@@ -3,7 +3,7 @@ import type { Product } from '../../core/api/IRepository';
 import { apiRepository } from '../../core/api';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
-import { X, Heart, ShoppingCart, ShieldCheck, Sparkles, Leaf } from 'lucide-react';
+import { X, Heart, ShoppingCart, ShieldCheck, Sparkles, Leaf, ChevronDown } from 'lucide-react';
 
 interface ProductDetailProps {
   product: Product;
@@ -21,6 +21,36 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   onToggleFavorite,
 }) => {
   const [activeProduct, setActiveProduct] = useState<Product>(product);
+  const [isOpenIntencion, setIsOpenIntencion] = useState(false);
+
+  const isSahumerio = activeProduct.subcategory?.toLowerCase() === 'inciensos' || activeProduct.name.toLowerCase().includes('sahumerio') || activeProduct.tags?.includes('Incienso') || activeProduct.tags?.includes('Sahumerio');
+
+  const INTENCIONES_MAP: Record<string, string> = {
+    'copal y rosas': 'Copal y Rosas: Sintonía de amor propio y purificación áurica. El copal limpia las energías estancadas abriendo el canal espiritual, mientras que los pétalos de rosa atraen la armonía y la compasión hacia uno mismo y el entorno.',
+    'copal': 'Copal Sagrado: Resina ancestral de purificación y conexión espiritual. Limpia ambientes de densidades energéticas, elevando la vibración del espacio y favoreciendo estados meditativos profundos.',
+    'rosas': 'Rosas Místicas: Elemento dulce y femenino para consagrar la armonía, la ternura y la vibración del amor. Ideal para atenuar tensiones cotidianas y endulzar el aire áurico de tu hogar.',
+    'sándalo': 'Sándalo Sagrado: Protector espiritual y pacificador mental. Calma la ansiedad, estimula el enraizamiento y propicia una atmósfera de serenidad mental ideal para la introspección y el yoga.',
+    'lavanda': 'Lavanda Silvestre: Elixir de relajación profunda y paz nocturna. Su sutil humo ayuda a inducir el descanso físico y mental, aplacando la hiperactividad del sistema nervioso.',
+    'romero': 'Romero Consagrado: Claridad mental, protección activa y renovación energética. Ideal para encender al comenzar tus tareas, estimulando el foco intelectual y disipando las dudas mentales.'
+  };
+
+  const getIntencionTexto = () => {
+    const nameLower = activeProduct.name.toLowerCase();
+    const descLower = activeProduct.description?.toLowerCase() || '';
+    const tagsLower = activeProduct.tags?.map(t => t.toLowerCase()) || [];
+    
+    for (const [key, value] of Object.entries(INTENCIONES_MAP)) {
+      if (nameLower.includes(key) || descLower.includes(key) || tagsLower.includes(key)) {
+        return value;
+      }
+    }
+    
+    return 'Armonía Botánica: Intención sagrada y vibración natural. Sahumado artesanal elaborado a base de resinas nobles y hierbas medicinales seleccionadas con amor para purificar tu ambiente, restaurar la calma y consagrar tu santuario cotidiano.';
+  };
+
+  useEffect(() => {
+    setIsOpenIntencion(false);
+  }, [activeProduct]);
   const [recommended, setRecommended] = useState<Product[]>([]);
   const [loadingRecommended, setLoadingRecommended] = useState<boolean>(true);
 
@@ -255,6 +285,77 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
                 <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-crema-calido)', fontWeight: '500' }}>{activeProduct.material}</span>
               </div>
             </div>
+
+            {isSahumerio && (
+              <div 
+                style={{ 
+                  marginBottom: '24px', 
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsOpenIntencion(!isOpenIntencion)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '14px 18px',
+                    backgroundColor: 'rgba(245, 239, 228, 0.25)',
+                    border: '1px solid rgba(197, 168, 128, 0.3)',
+                    borderRadius: isOpenIntencion ? '12px 12px 0 0' : '12px',
+                    color: 'var(--color-crema-calido)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    transition: 'all 0.3s ease',
+                    fontFamily: 'var(--font-sans)',
+                    fontWeight: 500,
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color="var(--color-dorado-mate)" />
+                    <span>Intención Espiritual & Botánica</span>
+                  </span>
+                  <ChevronDown 
+                    size={18} 
+                    style={{
+                      transform: isOpenIntencion ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }} 
+                  />
+                </button>
+                <div
+                  style={{
+                    maxHeight: isOpenIntencion ? '200px' : '0',
+                    opacity: isOpenIntencion ? 1 : 0,
+                    overflow: 'hidden',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    backgroundColor: 'rgba(23, 20, 18, 0.4)',
+                    borderLeft: '1px solid rgba(197, 168, 128, 0.3)',
+                    borderRight: '1px solid rgba(197, 168, 128, 0.3)',
+                    borderBottom: isOpenIntencion ? '1px solid rgba(197, 168, 128, 0.3)' : 'none',
+                    borderRadius: '0 0 12px 12px',
+                  }}
+                >
+                  <div style={{ padding: '16px 18px' }}>
+                    <Typography 
+                      variant="body-sm" 
+                      style={{ 
+                        color: 'var(--color-crema-calido)', 
+                        lineHeight: '1.6',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      {getIntencionTexto()}
+                    </Typography>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Fila de Precio, Stock y CTA */}
             <div className="product-detail-purchase-row" style={{

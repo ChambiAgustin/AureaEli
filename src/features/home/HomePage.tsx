@@ -440,7 +440,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart }) =
                 letterSpacing: '0.02em'
               }}
             >
-              “No vendemos objetos; te invitamos a fundar un oasis en tu cotidianidad. Nuestras alquimias están diseñadas con materias primas nobles y puras para desacelerar tu sistema nervioso y reconectarte con tu eje.”
+              Un espacio dedicado a nutrir tu bienestar. Encontrá elementos de primera calidad y seleccionados con amor para intencionar tus días, armar tus altares y conectar con tu magia cotidiana, llenando de armonía cada rincón de tu hogar.
             </p>
 
             {/* Los Botones Interactivos */}

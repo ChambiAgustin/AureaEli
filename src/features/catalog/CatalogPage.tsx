@@ -836,9 +836,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(15, 12, 11, 0.95)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
+            backgroundColor: 'rgba(35, 31, 28, 0.65)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             zIndex: 2000,
             display: 'flex',
             alignItems: 'center',
@@ -886,9 +886,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
               alt="Preview" 
               style={{
                 display: 'block',
-                maxWidth: '100%',
-                maxHeight: '80vh',
-                objectFit: 'contain'
+                maxWidth: 'min(75vw, 600px)',
+                maxHeight: '75vh',
+                objectFit: 'contain',
+                border: '1.5px solid var(--color-dorado-mate, #c5a880)',
+                backgroundColor: 'rgba(35, 31, 28, 0.45)'
               }}
             />
           </div>
