@@ -86,6 +86,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
 
   return (
     <div 
+      className="product-detail-backdrop"
       style={{
         position: 'fixed',
         top: 0,
@@ -106,6 +107,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       onClick={onClose}
     >
       <div 
+        className="product-detail-modal"
         style={{
           position: 'relative',
           width: '100%',
@@ -125,6 +127,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       >
         {/* Botón "✕" de cierre prominente */}
         <button
+          className="product-detail-close-btn"
           onClick={onClose}
           type="button"
           aria-label="Cerrar modal"
@@ -177,6 +180,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             }}
           >
             <img 
+              className="product-detail-img"
               src={activeProduct.imageUrl} 
               alt={activeProduct.name} 
               style={{
@@ -480,6 +484,32 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
           )}
         </div>
 
+        {/* Botón de cierre inferior prominente en móvil */}
+        <div className="product-detail-mobile-close-footer">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            style={{
+              width: '100%',
+              padding: '14px',
+              borderRadius: '16px',
+              backgroundColor: 'rgba(15, 12, 11, 0.08)',
+              borderColor: 'var(--color-dorado-mate, #c5a880)',
+              color: '#0f0c0b',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '20px'
+            }}
+          >
+            <X size={18} />
+            <span>✕ Cerrar Vista</span>
+          </Button>
+        </div>
+
       </div>
 
       {/* Estilos locales para animaciones y responsividad */}
@@ -499,6 +529,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
           }
         }
         
+        .product-detail-mobile-close-footer {
+          display: none;
+        }
         .product-detail-image-container {
           height: 300px;
         }
@@ -509,6 +542,42 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         }
         .product-detail-buttons-container {
           width: 100%;
+        }
+        @media (max-width: 767px) {
+          .product-detail-backdrop {
+            padding: 16px !important;
+          }
+          .product-detail-modal {
+            width: calc(100vw - 32px) !important;
+            max-width: 100% !important;
+            max-height: 82vh !important;
+            padding: 16px !important;
+            overflow-y: auto !important;
+            border-radius: 20px !important;
+          }
+          .product-detail-close-btn {
+            position: sticky !important;
+            top: 12px !important;
+            right: 12px !important;
+            align-self: flex-end !important;
+            z-index: 1000 !important;
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 1rem !important;
+            margin-bottom: -36px !important;
+          }
+          .product-detail-image-container {
+            height: auto !important;
+            max-height: 180px !important;
+            margin-top: 4px !important;
+          }
+          .product-detail-img {
+            max-height: 180px !important;
+            object-fit: contain !important;
+          }
+          .product-detail-mobile-close-footer {
+            display: block !important;
+          }
         }
         @media (min-width: 768px) {
           .product-detail-image-container {
