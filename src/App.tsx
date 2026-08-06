@@ -442,6 +442,9 @@ function App() {
         margin: '0 auto',
         zIndex: 1000
       }}>
+        {/* Reproductor de Música Ambiental Ritual */}
+        <AmbientAudioPlayer />
+
         {/* Logo reactivo centrado editorialmente */}
         <div 
           onClick={() => handleNavigate('home')}
@@ -868,8 +871,6 @@ function App() {
 
       {/* ==================== OUT-OF-LAYOUT OVERLAYS ==================== */}
 
-      {/* Reproductor de Música Ambiental Ritual */}
-      <AmbientAudioPlayer />
 
       {/* Slide-out Cart Panel */}
       <SlideOutCart

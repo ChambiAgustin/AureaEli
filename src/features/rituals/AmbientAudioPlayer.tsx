@@ -15,6 +15,15 @@ export const AmbientAudioPlayer: React.FC = () => {
     }
   });
 
+  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsExpanded(false);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const clearFadeInterval = () => {
     if (fadeIntervalRef.current !== null) {
       clearInterval(fadeIntervalRef.current);
@@ -115,57 +124,61 @@ export const AmbientAudioPlayer: React.FC = () => {
   return (
     <button
       onClick={togglePlay}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
       type="button"
+      title={isPlaying ? 'Música Ritual 🎵' : 'Música Mute 🔇'}
       style={{
-        position: 'fixed',
-        bottom: '24px',
-        left: '24px',
-        zIndex: 1050,
-        background: 'rgba(245, 239, 228, 0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        border: '1.5px solid rgba(197, 168, 128, 0.5)',
-        borderRadius: '30px',
-        padding: '10px 18px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+        position: 'absolute',
+        left: '40px',
+        width: isExpanded ? '150px' : '40px',
+        height: '40px',
+        borderRadius: isExpanded ? '20px' : '50%',
+        padding: isExpanded ? '0 14px' : '0',
+        border: '1px solid rgba(176, 142, 98, 0.15)',
+        background: 'rgba(197, 168, 128, 0.05)',
+        boxShadow: '0 4px 12px rgba(44, 36, 32, 0.03)',
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
+        justifyContent: 'center',
         cursor: 'pointer',
-        color: '#0f0c0b',
-        fontFamily: 'var(--font-sans)',
-        fontSize: '0.85rem',
-        fontWeight: 600,
-        transition: 'all 0.3s ease',
+        color: isPlaying ? 'var(--color-dorado-mate, #c5a880)' : 'var(--color-text-dark, #2c2420)',
+        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
         outline: 'none',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'scale(1.04)';
-        e.currentTarget.style.borderColor = 'rgba(197, 168, 128, 0.9)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'scale(1)';
-        e.currentTarget.style.borderColor = 'rgba(197, 168, 128, 0.5)';
+        overflow: 'hidden',
+        zIndex: 10,
       }}
     >
       {isPlaying ? (
-        <>
-          <Volume2
-            size={18}
-            style={{
-              color: '#c5a880',
-              filter: 'drop-shadow(0 0 6px rgba(197, 168, 128, 0.8))',
-              animation: 'pulseGlow 2s infinite ease-in-out',
-            }}
-          />
-          <span>Música Ritual 🎵</span>
-        </>
+        <Volume2
+          size={20}
+          style={{
+            color: '#c5a880',
+            filter: 'drop-shadow(0 0 6px rgba(197, 168, 128, 0.8))',
+            animation: 'pulseGlow 2s infinite ease-in-out',
+            flexShrink: 0,
+          }}
+        />
       ) : (
-        <>
-          <VolumeX size={18} style={{ color: '#8a7d6b' }} />
-          <span style={{ color: '#554d42' }}>Música Mute 🔇</span>
-        </>
+        <VolumeX size={20} style={{ color: '#8a7d6b', flexShrink: 0 }} />
       )}
+
+      <span
+        style={{
+          whiteSpace: 'nowrap',
+          opacity: isExpanded ? 1 : 0,
+          maxWidth: isExpanded ? '100px' : '0px',
+          overflow: 'hidden',
+          transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+          marginLeft: isExpanded ? '8px' : '0px',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          color: isPlaying ? 'var(--color-dorado-mate, #c5a880)' : '#8a7d6b',
+        }}
+      >
+        {isPlaying ? 'Música Ritual 🎵' : 'Música Mute 🔇'}
+      </span>
+
       <style>{`
         @keyframes pulseGlow {
           0%, 100% { filter: drop-shadow(0 0 4px rgba(197, 168, 128, 0.6)); }
@@ -177,3 +190,4 @@ export const AmbientAudioPlayer: React.FC = () => {
 };
 
 export default AmbientAudioPlayer;
+
