@@ -4,7 +4,7 @@ import { HapticsService } from '../../core/services/HapticsService';
 
 export const AmbientAudioPlayer: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fadeIntervalRef = useRef<NodeJS.Timeout | number | null>(null);
+  const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(() => {
     try {
@@ -17,7 +17,7 @@ export const AmbientAudioPlayer: React.FC = () => {
 
   const clearFadeInterval = () => {
     if (fadeIntervalRef.current !== null) {
-      clearInterval(fadeIntervalRef.current as number);
+      clearInterval(fadeIntervalRef.current);
       fadeIntervalRef.current = null;
     }
   };
