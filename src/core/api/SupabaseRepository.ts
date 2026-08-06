@@ -112,6 +112,35 @@ function mapOrder(dbOrder: Record<string, any>): Order {
   };
 }
 
+function mapRitual(dbRitual: Record<string, any>): Ritual {
+  let audioUrl = (dbRitual.audio_url as string) ?? '';
+
+  if (!audioUrl || audioUrl.toLowerCase().includes('soundhelix')) {
+    const id = ((dbRitual.id as string) ?? '').toLowerCase();
+    const slug = ((dbRitual.slug as string) ?? '').toLowerCase();
+
+    if (id.includes('calma') || slug.includes('calma')) {
+      audioUrl = '/audio/calma-mindfulness.mp3';
+    } else if (id.includes('florecimiento') || slug.includes('florecimiento')) {
+      audioUrl = '/audio/florecimiento-meditacion.mp3';
+    } else if (id.includes('desconexion') || slug.includes('desconexion')) {
+      audioUrl = '/audio/desconexion-weightless.mp3';
+    } else {
+      audioUrl = '/audio/calma-mindfulness.mp3';
+    }
+  }
+
+  return {
+    id: dbRitual.id as string,
+    title: dbRitual.title as string,
+    description: (dbRitual.description as string) ?? '',
+    durationMinutes: Number(dbRitual.duration_minutes ?? 0),
+    audioUrl,
+    steps: (dbRitual.steps as string[]) ?? [],
+    productIds: (dbRitual.product_ids as string[]) ?? [],
+  };
+}
+
 // ─── Repositorio ──────────────────────────────────────────────────────────
 
 export class SupabaseRepository implements IRepository {
@@ -261,15 +290,7 @@ export class SupabaseRepository implements IRepository {
       .order('created_at', { ascending: true });
 
     if (error) throw new Error(`getRituals: ${error.message}`);
-    return (data ?? []).map((row) => ({
-      id: row.id as string,
-      title: row.title as string,
-      description: (row.description as string) ?? '',
-      durationMinutes: Number(row.duration_minutes ?? 0),
-      audioUrl: (row.audio_url as string) ?? '',
-      steps: (row.steps as string[]) ?? [],
-      productIds: (row.product_ids as string[]) ?? [],
-    }));
+    return (data ?? []).map(mapRitual);
   }
 
   async saveRitual(ritual: Ritual): Promise<Ritual> {
@@ -288,15 +309,7 @@ export class SupabaseRepository implements IRepository {
       .single();
 
     if (error) throw new Error(`saveRitual: ${error.message}`);
-    return {
-      id: data.id as string,
-      title: data.title as string,
-      description: (data.description as string) ?? '',
-      durationMinutes: Number(data.duration_minutes ?? 0),
-      audioUrl: (data.audio_url as string) ?? '',
-      steps: (data.steps as string[]) ?? [],
-      productIds: (data.product_ids as string[]) ?? [],
-    };
+    return mapRitual(data);
   }
 
   async getRitualById(id: string): Promise<Ritual | null> {
@@ -307,17 +320,7 @@ export class SupabaseRepository implements IRepository {
       .single();
 
     if (error) return null;
-    return data
-      ? {
-          id: data.id as string,
-          title: data.title as string,
-          description: (data.description as string) ?? '',
-          durationMinutes: Number(data.duration_minutes ?? 0),
-          audioUrl: (data.audio_url as string) ?? '',
-          steps: (data.steps as string[]) ?? [],
-          productIds: (data.product_ids as string[]) ?? [],
-        }
-      : null;
+    return data ? mapRitual(data) : null;
   }
 
   // ── USUARIO ──────────────────────────────────────────────────────────────

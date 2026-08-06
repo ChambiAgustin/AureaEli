@@ -285,7 +285,7 @@ const MOCK_RITUALS: Ritual[] = [
     title: 'Ritual de Calma al Atardecer',
     description: 'Una pausa consciente al final del día para disolver el cansancio acumulado e iniciar una transición suave hacia un sueño profundo y reparador.',
     durationMinutes: 15,
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Audio mock de prueba
+    audioUrl: '/audio/calma-mindfulness.mp3',
     steps: [
       'Prepará el espacio atenuando las luces principales y encendé tu vela de soja "Bruma Ancestral". Observá la llama y dejá que el sutil crujido de su pabilo de madera empiece a armonizar el entorno.',
       'Buscá una postura cómoda y sentate sobre un cojín o colchoneta. Envolvé tus hombros y espalda con la manta de algodón orgánico para crear un límite amoroso y cálido con el exterior.',
@@ -300,7 +300,7 @@ const MOCK_RITUALS: Ritual[] = [
     title: 'Ritual de Florecimiento Sensorial',
     description: 'Un ritual botánico de purificación energética y conexión con tu creatividad interior empleando humo sagrado de resinas naturales.',
     durationMinutes: 20,
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    audioUrl: '/audio/florecimiento-meditacion.mp3',
     steps: [
       'Colocá un sahumerio de Copal y Rosas en tu Cuenco Ritual de cerámica. Encendé la punta con un fósforo de madera e insuflá aire suavemente hasta que comience a fluir el humo sagrado aromático.',
       'Tomá el cuenco firmemente entre tus manos. Dibujá con cuidado círculos en el aire a tu alrededor, permitiendo que el aroma balsámico limpie tu campo energético y redefina el aire que respirás.',
@@ -315,7 +315,7 @@ const MOCK_RITUALS: Ritual[] = [
     title: 'Ritual de Desconexión Digital',
     description: 'Un retorno absoluto a la quietud física y mental. Diseñado para desacelerar la mente sobreestimulada por la luz azul y el flujo informativo digital.',
     durationMinutes: 30,
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    audioUrl: '/audio/desconexion-weightless.mp3',
     steps: [
       'Apagá y apartá todos tus dispositivos electrónicos (celulares, pantallas) y llévalos fuera de la habitación al menos dos horas antes de dormir.',
       'Prepará un baño de inmersión tibio. Esparcí generosamente las Sales del Himalaya en el agua y revolvé suavemente para disolver los minerales y activar los aceites esenciales.',
