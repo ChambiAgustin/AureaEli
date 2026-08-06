@@ -1,15 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Typography from './shared/components/Typography';
 import Button from './shared/components/Button';
 import Card from './shared/components/Card';
 import HomePage from './features/home/HomePage';
 import CatalogPage from './features/catalog/CatalogPage';
-import RitualsPage from './features/rituals/RitualsPage';
 import SlideOutCart from './features/checkout/SlideOutCart';
-import CheckoutFlow from './features/checkout/CheckoutFlow';
-import ProfilePage from './features/profile/ProfilePage';
-import AuthPage from './features/auth/AuthPage';
-import { AdminPage } from './features/admin/AdminPage';
 import { apiRepository } from './core/api';
 import { supabase } from './core/supabase/client';
 import type { Product, UserProfile, Order } from './core/api/IRepository';
@@ -24,6 +19,65 @@ import {
   ShoppingCart,
   User,
 } from 'lucide-react';
+
+// Carga perezosa (React.lazy) para optimización de bundles
+const AdminPage = React.lazy(() => import('./features/admin/AdminPage').then(module => ({ default: module.AdminPage })));
+const CheckoutFlow = React.lazy(() => import('./features/checkout/CheckoutFlow'));
+const ProfilePage = React.lazy(() => import('./features/profile/ProfilePage'));
+const RitualsPage = React.lazy(() => import('./features/rituals/RitualsPage'));
+const AuthPage = React.lazy(() => import('./features/auth/AuthPage'));
+
+// Componente Fallback sutil con estética glassmorphic mística en tono dorado mate (#c5a880)
+const PageLoadingFallback: React.FC = () => (
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '40vh',
+      padding: '40px',
+      borderRadius: '24px',
+      background: 'rgba(197, 168, 128, 0.05)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      border: '1px solid rgba(197, 168, 128, 0.2)',
+      boxShadow: '0 8px 32px rgba(44, 36, 32, 0.05)',
+      margin: '40px auto',
+      maxWidth: '480px',
+      textAlign: 'center',
+    }}
+  >
+    <div
+      style={{
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        border: '2px solid rgba(197, 168, 128, 0.2)',
+        borderTopColor: '#c5a880',
+        animation: 'spinFallback 1s linear infinite',
+        marginBottom: '16px',
+      }}
+    />
+    <span
+      style={{
+        fontFamily: 'var(--font-serif, serif)',
+        fontSize: '0.85rem',
+        color: '#c5a880',
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+      }}
+    >
+      Sintonizando Alquimia...
+    </span>
+    <style>{`
+      @keyframes spinFallback {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `}</style>
+  </div>
+);
 
 // Tipado para paleta cromática de la Home
 interface ColorToken {
@@ -461,70 +515,72 @@ function App() {
       </header>
 
       {/* Contenedor Principal con Espaciado Lateral y Auto-crecimiento */}
-      <main className="container" style={{ flex: '1 0 auto', paddingBottom: '80px', marginTop: '20px' }}>
+      <main className="container page-fade-in" style={{ flex: '1 0 auto', paddingBottom: '80px', marginTop: '20px' }}>
 
-        {/* ==================== RENDERING TABS ==================== */}
+        <Suspense fallback={<PageLoadingFallback />}>
+          {/* ==================== RENDERING TABS ==================== */}
 
-        {/* 1. HOME TEMPLO (SILENT SELLER) */}
-        {activeTab === 'home' && (
-          <HomePage
-            onNavigate={handleNavigate}
-            onAddToCart={handleAddToCart}
-          />
-        )}
+          {/* 1. HOME TEMPLO (SILENT SELLER) */}
+          {activeTab === 'home' && (
+            <HomePage
+              onNavigate={handleNavigate}
+              onAddToCart={handleAddToCart}
+            />
+          )}
 
-        {/* 2. CATALOGO SENSORIAL */}
-        {activeTab === 'catalog' && (
-          <CatalogPage
-            onAddToCart={handleAddToCart}
-            favorites={favorites}
-            onToggleFavorite={handleToggleFavorite}
-            initialCategory={selectedCategoryFilter}
-          />
-        )}
-
-        {/* 3. GUIA DE RITUALES */}
-        {activeTab === 'rituals' && (
-          <RitualsPage
-            onAddToCart={handleAddToCart}
-            favorites={favorites}
-            onToggleFavorite={handleToggleFavorite}
-            onAddMultipleToCart={handleAddMultipleToCart}
-            triggerToast={triggerToast}
-          />
-        )}
-
-        {/* 4. PERFIL / AUTENTICACION */}
-        {activeTab === 'profile' && (
-          userProfile ? (
-            <ProfilePage
-              userProfile={userProfile}
-              onUpdateProfile={setUserProfile}
+          {/* 2. CATALOGO SENSORIAL */}
+          {activeTab === 'catalog' && (
+            <CatalogPage
               onAddToCart={handleAddToCart}
               favorites={favorites}
               onToggleFavorite={handleToggleFavorite}
-              triggerToast={triggerToast}
-              orders={orders}
+              initialCategory={selectedCategoryFilter}
             />
-          ) : (
-            <AuthPage
-              onLoginSuccess={(profile) => {
-                setUserProfile(profile);
-                setFavorites(profile.favorites || []);
-                apiRepository.getOrders().then(setOrders);
-              }}
-              triggerToast={triggerToast}
-            />
-          )
-        )}
+          )}
 
-        {/* 5. ALTAR DE AUTOGESTION (ADMIN PANEL) */}
-        {activeTab === 'admin' && (
-          <AdminPage
-            onProductsChange={handleSyncCartWithRepository}
-            triggerToast={triggerToast}
-          />
-        )}
+          {/* 3. GUIA DE RITUALES */}
+          {activeTab === 'rituals' && (
+            <RitualsPage
+              onAddToCart={handleAddToCart}
+              favorites={favorites}
+              onToggleFavorite={handleToggleFavorite}
+              onAddMultipleToCart={handleAddMultipleToCart}
+              triggerToast={triggerToast}
+            />
+          )}
+
+          {/* 4. PERFIL / AUTENTICACION */}
+          {activeTab === 'profile' && (
+            userProfile ? (
+              <ProfilePage
+                userProfile={userProfile}
+                onUpdateProfile={setUserProfile}
+                onAddToCart={handleAddToCart}
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                triggerToast={triggerToast}
+                orders={orders}
+              />
+            ) : (
+              <AuthPage
+                onLoginSuccess={(profile) => {
+                  setUserProfile(profile);
+                  setFavorites(profile.favorites || []);
+                  apiRepository.getOrders().then(setOrders);
+                }}
+                triggerToast={triggerToast}
+              />
+            )
+          )}
+
+          {/* 5. ALTAR DE AUTOGESTION (ADMIN PANEL) */}
+          {activeTab === 'admin' && (
+            <AdminPage
+              onProductsChange={handleSyncCartWithRepository}
+              triggerToast={triggerToast}
+            />
+          )}
+        </Suspense>
 
       </main>
 
@@ -825,14 +881,16 @@ function App() {
       />
 
       {/* Checkout Flow */}
-      <CheckoutFlow
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        cartItems={cartItems}
-        userProfile={userProfile}
-        onOrderComplete={handleOrderComplete}
-        triggerToast={triggerToast}
-      />
+      <Suspense fallback={<PageLoadingFallback />}>
+        <CheckoutFlow
+          isOpen={isCheckoutOpen}
+          onClose={() => setIsCheckoutOpen(false)}
+          cartItems={cartItems}
+          userProfile={userProfile}
+          onOrderComplete={handleOrderComplete}
+          triggerToast={triggerToast}
+        />
+      </Suspense>
 
       <style>{`
         @keyframes bounceBadge {

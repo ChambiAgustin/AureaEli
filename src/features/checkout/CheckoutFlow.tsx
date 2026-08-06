@@ -16,7 +16,7 @@ import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { Product, Order, UserProfile } from '../../core/api';
-import { MercadoPagoService, MercadoPagoPreferenceResponse } from '../../core/services/MercadoPagoService';
+import { MercadoPagoService, type MercadoPagoPreferenceResponse } from '../../core/services/MercadoPagoService';
 import { WHATSAPP_URL } from '../../shared/constants';
 
 interface CheckoutFlowProps {

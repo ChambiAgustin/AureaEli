@@ -97,3 +97,21 @@
 .organic-breath {
   animation: breathingInhaleExhale 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+
+/* Transición suave de entrada de página acelerada por GPU */
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-fade-in {
+  animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity, transform;
+}
+

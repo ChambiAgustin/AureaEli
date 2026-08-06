@@ -1,4 +1,4 @@
-import { Order, CartItem } from '../api/IRepository';
+import type { Order, CartItem } from '../api/IRepository';
 
 export interface MercadoPagoPreferenceResponse {
   id: string;

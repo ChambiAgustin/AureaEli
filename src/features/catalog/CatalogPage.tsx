@@ -7,6 +7,7 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import ProductDetail from './ProductDetail';
+import { HapticsService } from '../../core/services/HapticsService';
 import { Search, Heart, SlidersHorizontal, ShoppingCart, Eye, Sparkles, RefreshCw, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 
 const normalizeString = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
@@ -367,7 +368,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           {INTENTIONS.map((intention) => (
             <button
               key={intention.value}
-              onClick={() => setSelectedIntention(intention.value)}
+              onClick={() => {
+                HapticsService.medium();
+                setSelectedIntention(intention.value);
+              }}
               style={{
                 flexShrink: 0,
                 padding: '8px 16px',
@@ -648,6 +652,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      HapticsService.medium();
                       onToggleFavorite(product.id);
                     }}
                     style={{
@@ -859,7 +864,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                         variant="primary"
                         size="sm"
                         disabled={product.stock === 0}
-                        onClick={() => onAddToCart(product)}
+                        onClick={() => {
+                          HapticsService.success();
+                          onAddToCart(product);
+                        }}
                         style={{ 
                           padding: '8px 16px', 
                           borderRadius: '12px',
@@ -970,9 +978,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         <ProductDetail
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
-          onAddToCart={onAddToCart}
+          onAddToCart={(p) => {
+            HapticsService.success();
+            onAddToCart(p);
+          }}
           isFavorite={favorites.includes(selectedProduct.id)}
-          onToggleFavorite={onToggleFavorite}
+          onToggleFavorite={(id) => {
+            HapticsService.medium();
+            onToggleFavorite(id);
+          }}
         />
       )}
 
