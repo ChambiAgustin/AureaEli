@@ -5,6 +5,7 @@ import Card from './shared/components/Card';
 import HomePage from './features/home/HomePage';
 import CatalogPage from './features/catalog/CatalogPage';
 import SlideOutCart from './features/checkout/SlideOutCart';
+import AmbientAudioPlayer from './features/rituals/AmbientAudioPlayer';
 import { apiRepository } from './core/api';
 import { supabase } from './core/supabase/client';
 import type { Product, UserProfile, Order } from './core/api/IRepository';
@@ -866,6 +867,9 @@ function App() {
       </nav>
 
       {/* ==================== OUT-OF-LAYOUT OVERLAYS ==================== */}
+
+      {/* Reproductor de Música Ambiental Ritual */}
+      <AmbientAudioPlayer />
 
       {/* Slide-out Cart Panel */}
       <SlideOutCart
