@@ -96,6 +96,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         zIndex: 2000,
+        pointerEvents: 'auto',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -108,7 +109,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '950px',
+          maxWidth: 'min(90vw, 950px)',
           maxHeight: '90vh',
           overflowY: 'auto',
           backgroundColor: 'rgba(245, 239, 228, 0.95)',
@@ -141,6 +142,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             backgroundColor: 'rgba(255, 255, 255, 0.9)',
             border: '1.5px solid var(--color-dorado-mate, #c5a880)',
             color: 'var(--color-tierra-profunda, #0f0c0b)',
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
             cursor: 'pointer',
             transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
@@ -156,7 +159,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
             e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
           }}
         >
-          <X size={22} />
+          ✕
         </button>
 
         {/* Layout en dos columnas */}

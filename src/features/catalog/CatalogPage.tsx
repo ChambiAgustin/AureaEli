@@ -82,7 +82,6 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   
   // Product Detail State
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // Los productos vienen del hook useProducts (Supabase + Realtime)
 
@@ -639,13 +638,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                       <Card 
                         className="catalog-product-card"
                         key={product.id}
+                        onClick={() => setSelectedProduct(product)}
                         style={{
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
                           minHeight: '440px',
                           padding: '20px',
-                          position: 'relative'
+                          position: 'relative',
+                          cursor: 'pointer'
                         }}
                       >
                   {/* Favorito Button Floater */}
@@ -693,7 +694,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     {/* Imagen de Producto */}
                     <div 
                       className="product-card-image-wrapper"
-                      onClick={() => setLightboxImage(product.imageUrl)}
+                      onClick={(e) => { e.stopPropagation(); setSelectedProduct(product); }}
                       style={{
                         height: '180px',
                         width: '100%',
@@ -835,7 +836,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setSelectedProduct(product)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProduct(product);
+                        }}
                         style={{ 
                           padding: '8px 12px', 
                           borderRadius: '12px',
@@ -864,7 +868,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                         variant="primary"
                         size="sm"
                         disabled={product.stock === 0}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           HapticsService.success();
                           onAddToCart(product);
                         }}
@@ -990,80 +995,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         />
       )}
 
-      {/* Lightbox de imágenes */}
-      {lightboxImage && (
-        <div 
-          onClick={() => setLightboxImage(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(35, 31, 28, 0.65)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'zoom-out',
-            animation: 'fadeIn 0.3s ease-out'
-          }}
-        >
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setLightboxImage(null);
-            }}
-            style={{
-              position: 'absolute',
-              top: '24px',
-              right: '24px',
-              background: 'none',
-              border: 'none',
-              color: 'var(--color-crema-calido)',
-              fontSize: '2rem',
-              cursor: 'pointer',
-              zIndex: 2001,
-              padding: '8px',
-              lineHeight: 1
-            }}
-          >
-            ✕
-          </button>
-          <div 
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'relative',
-              maxWidth: 'min(90vw, 600px)',
-              maxHeight: '80vh',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
-              borderRadius: '24px',
-              overflow: 'hidden',
-              border: '1.5px solid var(--color-dorado-mate, #c5a880)',
-              backgroundColor: 'var(--color-tierra-profunda, #0f0c0b)'
-            }}
-          >
-            <img 
-              src={lightboxImage} 
-              alt="Preview" 
-              style={{
-                display: 'block',
-                width: 'auto',
-                height: 'auto',
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                backgroundColor: 'rgba(35, 31, 28, 0.45)'
-              }}
-            />
-          </div>
-        </div>
-      )}
+
 
       {/* Sabor de Pulse Animation en CSS */}
       <style>{`
