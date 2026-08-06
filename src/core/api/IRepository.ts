@@ -61,6 +61,8 @@ export interface OrderItem {
   quantity: number;
 }
 
+export type CartItem = OrderItem;
+
 export interface Order {
   id: string;
   userProfile: UserProfile;
@@ -71,6 +73,9 @@ export interface Order {
   address: string;
   createdAt: string;
   trackingNumber?: string;
+  customerPhone?: string;
+  mercadopagoPreferenceId?: string;
+  paymentStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface IRepository {
@@ -100,4 +105,7 @@ export interface IRepository {
   updateUserProfile(profile: UserProfile): Promise<UserProfile>;
   createOrder(order: Omit<Order, 'id' | 'createdAt' | 'status' | 'trackingNumber'>): Promise<Order>;
   getOrders(): Promise<Order[]>;
+  updateOrderStatus(orderId: string, status: Order['status']): Promise<Order>;
+  updateOrderTracking(orderId: string, trackingNumber: string): Promise<Order>;
 }
+

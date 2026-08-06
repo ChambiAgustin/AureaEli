@@ -7,7 +7,28 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import ProductDetail from './ProductDetail';
-import { Search, Heart, SlidersHorizontal, ShoppingCart, Eye, Sparkles, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Heart, SlidersHorizontal, ShoppingCart, Eye, Sparkles, RefreshCw, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+
+const normalizeString = (str: string) => str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+
+export type IntentionType = 'all' | 'limpieza' | 'proteccion' | 'calma' | 'abundancia' | 'amor';
+export type SortOptionType = 'featured' | 'price-asc' | 'price-desc' | 'name';
+
+const INTENTIONS: { value: IntentionType; label: string }[] = [
+  { value: 'all', label: 'Todas las Intenciones' },
+  { value: 'limpieza', label: 'Limpieza & Armonía' },
+  { value: 'proteccion', label: 'Protección & Fuerza' },
+  { value: 'calma', label: 'Calma & Paz' },
+  { value: 'abundancia', label: 'Abundancia & Prosperidad' },
+  { value: 'amor', label: 'Amor Propio & Magia' },
+];
+
+const SORT_OPTIONS: { value: SortOptionType; label: string }[] = [
+  { value: 'featured', label: 'Destacados' },
+  { value: 'price-asc', label: 'Menor precio' },
+  { value: 'price-desc', label: 'Mayor precio' },
+  { value: 'name', label: 'Nombre A-Z' },
+];
 
 interface CatalogPageProps {
   onAddToCart: (product: Product) => void;
@@ -28,9 +49,22 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const [selectedIntention, setSelectedIntention] = useState<IntentionType>('all');
+  const [sortBy, setSortBy] = useState<SortOptionType>('featured');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 9;
+
+  // Debounce para el término de búsqueda (300ms)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
 
   // Normaliza el initialCategory contra los nombres reales de la BD
   useEffect(() => {
@@ -55,16 +89,17 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   useEffect(() => {
     let result = [...products];
 
-    // Search filter
-    if (searchTerm.trim() !== '') {
-      const term = searchTerm.toLowerCase();
+    // Search filter con normalizeString sobre debouncedSearchTerm
+    if (debouncedSearchTerm.trim() !== '') {
+      const term = normalizeString(debouncedSearchTerm);
       result = result.filter(
         (p) =>
-          p.name.toLowerCase().includes(term) ||
-          p.description.toLowerCase().includes(term) ||
-          p.sensoryDescription.toLowerCase().includes(term) ||
-          p.ingredients.some((i) => i.toLowerCase().includes(term)) ||
-          p.tags.some((t) => t.toLowerCase().includes(term))
+          normalizeString(p.name).includes(term) ||
+          normalizeString(p.description).includes(term) ||
+          normalizeString(p.aroma).includes(term) ||
+          normalizeString(p.sensoryDescription).includes(term) ||
+          p.ingredients.some((i) => normalizeString(i).includes(term)) ||
+          p.tags.some((t) => normalizeString(t).includes(term))
       );
     }
 
@@ -76,14 +111,25 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       });
     }
 
+    // Intention filter
+    if (selectedIntention !== 'all') {
+      const normIntention = normalizeString(selectedIntention);
+      result = result.filter((p) => {
+        const combined = normalizeString(
+          `${p.name} ${p.description} ${p.sensoryDescription} ${p.aroma} ${p.category} ${p.subcategory} ${(p.tags || []).join(' ')} ${(p as any).intention || ''}`
+        );
+        return combined.includes(normIntention);
+      });
+    }
+
     // Aroma filter
     if (selectedAroma !== 'Todos') {
-      const aromaQuery = selectedAroma.toLowerCase();
+      const aromaQuery = normalizeString(selectedAroma);
       result = result.filter((p) => {
-        const matchesAromaField = p.aroma.toLowerCase().includes(aromaQuery);
-        const matchesName = p.name.toLowerCase().includes(aromaQuery);
-        const matchesIngredients = p.ingredients.some((i) => i.toLowerCase().includes(aromaQuery));
-        const matchesTags = p.tags.some((t) => t.toLowerCase().includes(aromaQuery));
+        const matchesAromaField = normalizeString(p.aroma).includes(aromaQuery);
+        const matchesName = normalizeString(p.name).includes(aromaQuery);
+        const matchesIngredients = p.ingredients.some((i) => normalizeString(i).includes(aromaQuery));
+        const matchesTags = p.tags.some((t) => normalizeString(t).includes(aromaQuery));
 
         // Special case: Madera matches sandalo/bosque/ wood textures
         if (aromaQuery === 'madera') {
@@ -92,8 +138,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             matchesName ||
             matchesIngredients ||
             matchesTags ||
-            p.aroma.toLowerCase().includes('sándalo') ||
-            p.ingredients.some((i) => i.toLowerCase().includes('sándalo'))
+            normalizeString(p.aroma).includes('sandalo') ||
+            p.ingredients.some((i) => normalizeString(i).includes('sandalo'))
           );
         }
 
@@ -112,13 +158,32 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
       result = result.filter((p) => p.isFeatured);
     }
 
+    // Sort by
+    result.sort((a, b) => {
+      if (sortBy === 'price-asc') {
+        return (a.promoPrice ?? a.price) - (b.promoPrice ?? b.price);
+      }
+      if (sortBy === 'price-desc') {
+        return (b.promoPrice ?? b.price) - (a.promoPrice ?? a.price);
+      }
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'featured') {
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return 0;
+      }
+      return 0;
+    });
+
     setFilteredProducts(result);
-  }, [products, searchTerm, selectedCategory, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly]);
+  }, [products, debouncedSearchTerm, selectedCategory, selectedIntention, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly, sortBy, favorites]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly]);
+  }, [debouncedSearchTerm, selectedCategory, selectedIntention, selectedAroma, maxPrice, showNewOnly, showFeaturedOnly, sortBy]);
 
   // Categorías dinámicas desde Supabase + "Todos" y "Favoritos" fijos
   const categoryFilters = ['Todos', ...categoryNames];
@@ -130,11 +195,14 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
   const handleResetFilters = () => {
     setSearchTerm('');
+    setDebouncedSearchTerm('');
     setSelectedCategory('Todos');
+    setSelectedIntention('all');
     setSelectedAroma('Todos');
     setMaxPrice(30000);
     setShowNewOnly(false);
     setShowFeaturedOnly(false);
+    setSortBy('featured');
   };
 
   return (
@@ -217,6 +285,44 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             />
           </div>
 
+          {/* Selector desplegable de ordenamiento (sortBy) */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOptionType)}
+              aria-label="Ordenar por"
+              style={{
+                padding: '14px 36px 14px 16px',
+                borderRadius: '16px',
+                backgroundColor: 'rgba(44, 36, 32, 0.04)',
+                border: '1px solid var(--color-dorado-mate)',
+                color: 'var(--color-text-dark)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '0.85rem',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'none',
+                WebkitAppearance: 'none',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value} style={{ background: '#1c1815', color: '#f7f4ee' }}>
+                  Ordenar: {opt.label}
+                </option>
+              ))}
+            </select>
+            <ArrowUpDown
+              size={14}
+              color="var(--color-dorado-mate)"
+              style={{
+                position: 'absolute',
+                right: '12px',
+                pointerEvents: 'none'
+              }}
+            />
+          </div>
+
           {/* Botón de ver Favoritos (Sección de Intenciones) */}
           <Button
             variant={selectedCategory === 'Favoritos' ? 'primary' : 'secondary'}
@@ -254,6 +360,48 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             <SlidersHorizontal size={16} />
             <span>Filtros</span>
           </Button>
+        </div>
+
+        {/* Chips de Intenciones Sagradas */}
+        <div className="mobile-scroll-x" style={{ paddingBottom: '4px', display: 'flex', gap: '8px' }}>
+          {INTENTIONS.map((intention) => (
+            <button
+              key={intention.value}
+              onClick={() => setSelectedIntention(intention.value)}
+              style={{
+                flexShrink: 0,
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: '1px solid',
+                borderColor: selectedIntention === intention.value ? 'var(--color-dorado-mate)' : 'rgba(176, 142, 98, 0.25)',
+                backgroundColor: selectedIntention === intention.value ? 'rgba(197, 168, 128, 0.18)' : 'rgba(44, 36, 32, 0.04)',
+                color: selectedIntention === intention.value ? 'var(--color-dorado-mate)' : 'var(--color-text-dark)',
+                fontFamily: 'var(--font-sans)',
+                fontSize: '0.8rem',
+                fontWeight: selectedIntention === intention.value ? '600' : '400',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              onMouseEnter={(e) => {
+                if (selectedIntention !== intention.value) {
+                  e.currentTarget.style.background = 'rgba(44, 36, 32, 0.08)';
+                  e.currentTarget.style.borderColor = 'var(--color-dorado-mate)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedIntention !== intention.value) {
+                  e.currentTarget.style.background = 'rgba(44, 36, 32, 0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(176, 142, 98, 0.25)';
+                }
+              }}
+            >
+              {selectedIntention === intention.value && <Sparkles size={12} color="var(--color-dorado-mate)" />}
+              <span>{intention.label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Filtros de Categoría Rápidos (Scroll horizontal en mobile) */}
@@ -554,6 +702,8 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                       <img 
                         src={product.imageUrl} 
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                           width: '100%',
                           height: '100%',

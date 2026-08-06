@@ -97,6 +97,21 @@ function toProfile(row: Record<string, unknown>): UserProfile {
   };
 }
 
+function mapOrder(dbOrder: Record<string, any>): Order {
+  return {
+    id: dbOrder.id as string,
+    userProfile: dbOrder.user_profile as UserProfile,
+    items: dbOrder.items as Order['items'],
+    status: dbOrder.status as Order['status'],
+    total: Number(dbOrder.total),
+    paymentMethod: dbOrder.payment_method as Order['paymentMethod'],
+    address: (dbOrder.address as string) ?? '',
+    createdAt: dbOrder.created_at as string,
+    trackingNumber: dbOrder.tracking_number as string | undefined,
+    customerPhone: (dbOrder.customer_phone as string) || (dbOrder.user_profile as any)?.phone || undefined,
+  };
+}
+
 // ─── Repositorio ──────────────────────────────────────────────────────────
 
 export class SupabaseRepository implements IRepository {
@@ -411,16 +426,18 @@ export class SupabaseRepository implements IRepository {
 
     if (error) throw new Error(`getOrders: ${error.message}`);
 
-    return (data ?? []).map((row) => ({
-      id: row.id as string,
-      userProfile: row.user_profile as UserProfile,
-      items: row.items as Order['items'],
-      status: row.status as Order['status'],
-      total: Number(row.total),
-      paymentMethod: row.payment_method as Order['paymentMethod'],
-      address: (row.address as string) ?? '',
-      createdAt: row.created_at as string,
-      trackingNumber: row.tracking_number as string | undefined,
-    }));
+    return (data ?? []).map(mapOrder);
+  }
+
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<Order> {
+    const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select('*').single();
+    if (error) throw error;
+    return mapOrder(data);
+  }
+
+  async updateOrderTracking(orderId: string, trackingNumber: string): Promise<Order> {
+    const { data, error } = await supabase.from('orders').update({ tracking_number: trackingNumber }).eq('id', orderId).select('*').single();
+    if (error) throw error;
+    return mapOrder(data);
   }
 }

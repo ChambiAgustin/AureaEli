@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiRepository } from '../../core/api';
 import { supabase } from '../../core/supabase/client';
 import type { Session } from '@supabase/supabase-js';
-import type { Product, Category, ContentBlock, Ritual } from '../../core/api/IRepository';
+import type { Product, Category, ContentBlock, Ritual, Order } from '../../core/api/IRepository';
 import { CanvasCropper } from '../../shared/components/CanvasCropper';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
@@ -10,7 +10,8 @@ import Card from '../../shared/components/Card';
 import {
   Lock, Plus, Edit2, Trash2, TrendingUp, Sparkles, AlertTriangle,
   Wind, Package, DollarSign, X, Check, LogOut, Image as ImageIcon,
-  FileText, Tag, ChevronDown, ChevronUp, Save, RefreshCw, Shuffle
+  FileText, Tag, ChevronDown, ChevronUp, Save, RefreshCw, Shuffle,
+  ShoppingBag, Phone, MessageSquare, ExternalLink, Minus
 } from 'lucide-react';
 
 interface AdminPageProps {
@@ -18,7 +19,7 @@ interface AdminPageProps {
   triggerToast?: (msg: string) => void;
 }
 
-type AdminTab = 'products' | 'content' | 'categories' | 'rituals';
+type AdminTab = 'orders' | 'products' | 'content' | 'categories' | 'rituals';
 
 // ── Borrador editable de los campos de un ritual ────────────────────────────
 type RitualFieldDraft = {
@@ -67,13 +68,17 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   // ── Navegación ────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<AdminTab>('products');
+  const [activeTab, setActiveTab] = useState<AdminTab>('orders');
 
   // ── Datos ─────────────────────────────────────────────────────────────────
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([]);
   const [rituals, setRituals] = useState<Ritual[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'completed'>('all');
+  const [trackingDrafts, setTrackingDrafts] = useState<Record<string, string>>({});
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -127,19 +132,42 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   }, []);
 
+  const loadOrders = useCallback(async () => {
+    try {
+      const ords = await apiRepository.getOrders();
+      setOrders(ords);
+      const drafts: Record<string, string> = {};
+      ords.forEach(o => {
+        drafts[o.id] = o.trackingNumber || '';
+      });
+      setTrackingDrafts(drafts);
+    } catch (err) {
+      console.error('Error loading orders:', err);
+    }
+  }, []);
+
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [prods, cats, blocks, rits] = await Promise.all([
+      const [prods, cats, blocks, rits, ords] = await Promise.all([
         apiRepository.getProducts(),
         apiRepository.getCategories(true),
         apiRepository.getContentBlocks(),
         apiRepository.getRituals(),
+        apiRepository.getOrders(),
       ]);
       setProducts(prods);
       setCategories(cats);
       setContentBlocks(blocks);
       setRituals(rits);
+      setOrders(ords);
+
+      const tDrafts: Record<string, string> = {};
+      ords.forEach(o => {
+        tDrafts[o.id] = o.trackingNumber || '';
+      });
+      setTrackingDrafts(tDrafts);
+
       // Inicializar drafts con los IDs y campos actuales de cada ritual
       const drafts: Record<string, string[]> = {};
       const fieldDrafts: Record<string, RitualFieldDraft> = {};
@@ -159,10 +187,60 @@ export const AdminPage: React.FC<AdminPageProps> = ({
     }
   }, []);
 
+  // ── Acciones de Órdenes ───────────────────────────────────────────────────
+  const handleUpdateOrderStatus = async (orderId: string, status: Order['status']) => {
+    try {
+      const updated = await apiRepository.updateOrderStatus(orderId, status);
+      setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+      triggerToast(`Estado de la orden actualizado a "${status === 'pending' ? 'Pendiente' : status === 'shipped' ? 'Enviada' : 'Completada'}".`);
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      triggerToast('Error al actualizar el estado de la orden.');
+    }
+  };
+
+  const handleUpdateOrderTracking = async (orderId: string) => {
+    const trackingNumber = trackingDrafts[orderId] ?? '';
+    try {
+      const updated = await apiRepository.updateOrderTracking(orderId, trackingNumber);
+      setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
+      triggerToast('Número de seguimiento guardado.');
+    } catch (err) {
+      console.error('Error updating tracking number:', err);
+      triggerToast('Error al guardar el seguimiento.');
+    }
+  };
+
+  const handleOpenWhatsApp = (order: Order) => {
+    const phone = order.customerPhone || (order.userProfile as any)?.phone || '';
+    if (!phone) {
+      triggerToast('El cliente no registró un número de teléfono.');
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, '');
+    const clientName = order.userProfile?.name || 'Cliente';
+    const orderIdShort = order.id.startsWith('order-') ? order.id.slice(6) : order.id.slice(0, 8);
+    const tracking = order.trackingNumber ? ` Tu código de seguimiento es ${order.trackingNumber}.` : '';
+    const message = `Hola ${clientName}, te contactamos de AUREA sobre tu pedido #${orderIdShort}.${tracking}`;
+    const url = `https://wa.me/${cleanPhone.startsWith('54') ? cleanPhone : '54' + cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleStockChange = async (product: Product, delta: number) => {
+    const newStock = Math.max(0, product.stock + delta);
+    if (newStock === product.stock) return;
+    try {
+      const updated = { ...product, stock: newStock };
+      await apiRepository.saveProduct(updated);
+      setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
+      triggerToast(`Stock de "${product.name}" actualizado a ${newStock} u.`);
+      if (onProductsChange) onProductsChange();
+    } catch (err) {
+      triggerToast('Error al actualizar el stock.');
+    }
+  };
+
   // ── Verificar sesión activa Y permiso de admin al montar ─────────────────
-  // Tener sesión no alcanza: solo cuentas en `admin_users` (otorgadas por
-  // scripts/setup-customer-auth.mjs con la Service Role Key) entran acá.
-  // Sin esto, cualquier cliente que se registre en la web entraría al admin.
   const verifyAdminAccess = useCallback(async (session: Session | null): Promise<boolean> => {
     if (!session) { setIsAuthenticated(false); return false; }
 
@@ -206,6 +284,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         loadProducts().finally(() => setIsSyncing(false));
         if (onProductsChange) onProductsChange();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        setIsSyncing(true);
+        loadOrders().finally(() => setIsSyncing(false));
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'content_blocks' }, async () => {
         const blocks = await apiRepository.getContentBlocks();
         setContentBlocks(blocks);
@@ -217,7 +299,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [isAuthenticated, loadAll, loadProducts, onProductsChange]);
+  }, [isAuthenticated, loadAll, loadProducts, loadOrders, onProductsChange]);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -461,7 +543,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({
   };
 
   const subcategoriesForSelected = categories.find(c => c.name === formCategory)?.subcategories ?? [];
-  const lowStockProducts = products.filter(p => p.stock < 12);
+  const totalSales = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const totalOrdersCount = orders.length;
+  const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
+  const averageTicket = totalOrdersCount > 0 ? totalSales / totalOrdersCount : 0;
+  const criticalStockProducts = products.filter(p => p.stock < 5);
+  const filteredOrders = orders.filter(o => {
+    if (orderStatusFilter === 'all') return true;
+    return o.status === orderStatusFilter;
+  });
 
   // ── Login ─────────────────────────────────────────────────────────────────
   if (!isAuthenticated) {
@@ -544,40 +634,50 @@ export const AdminPage: React.FC<AdminPageProps> = ({
         </Button>
       </div>
 
-      {/* Métricas */}
-      <div className="grid-3" style={styles.metricsGrid}>
+      {/* Métricas (4 KPIs) */}
+      <div className="grid-4" style={styles.metricsGrid}>
         <Card style={{ ...styles.metricCard, background: 'rgba(110, 126, 107, 0.08)' }}>
           <div style={styles.metricHeader}>
-            <Typography variant="caption" color="gold" style={styles.metricLabel}>Productos</Typography>
-            <Package size={18} color="#6e7e6b" />
+            <Typography variant="caption" color="gold" style={styles.metricLabel}>Ventas Totales</Typography>
+            <DollarSign size={18} color="#6e7e6b" />
           </div>
-          <Typography variant="h1" style={styles.metricValue}>{products.length}</Typography>
-          <span style={styles.metricSub}>En catálogo activo</span>
+          <Typography variant="h1" style={styles.metricValue}>${totalSales.toLocaleString('es-AR')}</Typography>
+          <span style={styles.metricSub}>Acumulado total</span>
         </Card>
         <Card style={{ ...styles.metricCard, background: 'rgba(197, 168, 128, 0.08)' }}>
           <div style={styles.metricHeader}>
-            <Typography variant="caption" color="gold" style={styles.metricLabel}>Categorías</Typography>
-            <Tag size={18} color="#c5a880" />
+            <Typography variant="caption" color="gold" style={styles.metricLabel}>Pedidos Totales</Typography>
+            <ShoppingBag size={18} color="#c5a880" />
           </div>
-          <Typography variant="h1" style={styles.metricValue}>{categories.length}</Typography>
-          <span style={styles.metricSub}>Categorías dinámicas</span>
+          <Typography variant="h1" style={styles.metricValue}>{totalOrdersCount}</Typography>
+          <span style={styles.metricSub}>{pendingOrdersCount} pendiente{pendingOrdersCount !== 1 ? 's' : ''}</span>
         </Card>
         <Card style={{ ...styles.metricCard, background: 'rgba(194, 139, 120, 0.08)' }}>
           <div style={styles.metricHeader}>
-            <Typography variant="caption" color="gold" style={styles.metricLabel}>Textos Editables</Typography>
-            <FileText size={18} color="#c28b78" />
+            <Typography variant="caption" color="gold" style={styles.metricLabel}>Ticket Promedio</Typography>
+            <TrendingUp size={18} color="#c28b78" />
           </div>
-          <Typography variant="h1" style={styles.metricValue}>{contentBlocks.length}</Typography>
-          <span style={styles.metricSub}>Bloques de contenido</span>
+          <Typography variant="h1" style={styles.metricValue}>${Math.round(averageTicket).toLocaleString('es-AR')}</Typography>
+          <span style={styles.metricSub}>Por pedido realizado</span>
+        </Card>
+        <Card style={{ ...styles.metricCard, background: 'rgba(163, 76, 55, 0.08)' }}>
+          <div style={styles.metricHeader}>
+            <Typography variant="caption" color="gold" style={styles.metricLabel}>Bajo Stock (&lt; 5 u.)</Typography>
+            <AlertTriangle size={18} color="#A34C37" />
+          </div>
+          <Typography variant="h1" style={{ ...styles.metricValue, color: criticalStockProducts.length > 0 ? '#A34C37' : 'inherit' }}>
+            {criticalStockProducts.length}
+          </Typography>
+          <span style={styles.metricSub}>{criticalStockProducts.length === 1 ? 'Producto a reponer' : 'Productos a reponer'}</span>
         </Card>
       </div>
 
       {/* Alerta stock */}
-      {lowStockProducts.length > 0 && (
+      {criticalStockProducts.length > 0 && (
         <div style={styles.alertBar}>
           <AlertTriangle size={18} color="#A34C37" style={{ marginRight: '12px', flexShrink: 0 }} />
           <Typography variant="body" style={{ fontSize: '0.88rem', color: '#A34C37' }}>
-            <strong>Stock bajo:</strong> {lowStockProducts.map(p => p.name).join(', ')} (&lt; 12 u.)
+            <strong>Stock Crítico (&lt; 5 u.):</strong> {criticalStockProducts.map(p => `${p.name} (${p.stock} u)`).join(', ')}
           </Typography>
         </div>
       )}
@@ -585,6 +685,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
       {/* Tabs */}
       <div style={styles.tabs}>
         {([
+          { id: 'orders', label: 'Órdenes', icon: <ShoppingBag size={15} /> },
           { id: 'products', label: 'Productos', icon: <Package size={15} /> },
           { id: 'content', label: 'Textos de la Página', icon: <FileText size={15} /> },
           { id: 'categories', label: 'Categorías', icon: <Tag size={15} /> },
@@ -599,6 +700,176 @@ export const AdminPage: React.FC<AdminPageProps> = ({
           </button>
         ))}
       </div>
+
+      {/* ── TAB: ÓRDENES ─────────────────────────────────────────────────── */}
+      {activeTab === 'orders' && (
+        <div className="glass-panel" style={styles.mainPanel}>
+          <div style={styles.panelHeader}>
+            <div>
+              <Typography variant="h3" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Gestión de Pedidos
+              </Typography>
+              <Typography variant="caption" color="muted" style={{ marginTop: '4px', display: 'block' }}>
+                Administrá el estado de los envíos y la comunicación directa con tus clientes.
+              </Typography>
+            </div>
+
+            {/* Filtros de estado */}
+            <div style={styles.filterGroup}>
+              {([
+                { id: 'all', label: `Todas (${orders.length})` },
+                { id: 'pending', label: `Pendientes (${orders.filter(o => o.status === 'pending').length})` },
+                { id: 'shipped', label: `Enviadas (${orders.filter(o => o.status === 'shipped').length})` },
+                { id: 'completed', label: `Completadas (${orders.filter(o => o.status === 'completed').length})` },
+              ] as const).map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setOrderStatusFilter(f.id)}
+                  style={{
+                    ...styles.filterBtn,
+                    ...(orderStatusFilter === f.id ? styles.filterBtnActive : {})
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div style={styles.loaderContainer}>
+              <div className="spinner" style={styles.spinner} />
+              <Typography variant="body" color="muted" style={{ marginTop: '16px' }}>Cargando órdenes desde Supabase...</Typography>
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div style={styles.emptyState}>
+              <ShoppingBag size={40} color="#c5a880" style={{ marginBottom: '16px' }} />
+              <Typography variant="body" color="muted">No hay órdenes registradas con este filtro.</Typography>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {filteredOrders.map(order => {
+                const phone = order.customerPhone || (order.userProfile as any)?.phone || '';
+                const statusColors = {
+                  pending: { bg: 'rgba(212, 175, 55, 0.15)', text: '#B08E62', label: 'Pendiente' },
+                  shipped: { bg: 'rgba(110, 126, 107, 0.18)', text: '#4E5E4C', label: 'Enviada' },
+                  completed: { bg: 'rgba(52, 120, 70, 0.15)', text: '#2E663B', label: 'Completada' },
+                }[order.status] || { bg: 'rgba(0,0,0,0.05)', text: '#666', label: order.status };
+
+                return (
+                  <div key={order.id} style={styles.orderCard}>
+                    {/* Header de la orden */}
+                    <div style={styles.orderCardHeader}>
+                      <div>
+                        <span style={styles.orderIdBadge}>ID: #{order.id.slice(0, 8)}...</span>
+                        <span style={styles.orderDateText}>
+                          {order.createdAt ? new Date(order.createdAt).toLocaleString('es-AR', {
+                            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                          }) : 'Fecha no registrada'}
+                        </span>
+                      </div>
+                      <span style={{
+                        ...styles.statusBadge,
+                        backgroundColor: statusColors.bg,
+                        color: statusColors.text,
+                      }}>
+                        {statusColors.label}
+                      </span>
+                    </div>
+
+                    {/* Detalle de la orden en grid 3 columnas */}
+                    <div style={styles.orderCardBody}>
+                      {/* Columna 1: Cliente & Dirección */}
+                      <div style={styles.orderCol}>
+                        <Typography variant="caption" color="gold" weight="bold" style={styles.colTitle}>
+                          Cliente & Envío
+                        </Typography>
+                        <p style={styles.orderDetailText}><strong>Nombre:</strong> {order.userProfile?.name || 'Cliente'}</p>
+                        <p style={styles.orderDetailText}><strong>Email:</strong> {order.userProfile?.email || 'No registrado'}</p>
+                        <p style={styles.orderDetailText}><strong>Teléfono:</strong> {phone || 'Sin registrar'}</p>
+                        <p style={{ ...styles.orderDetailText, marginTop: '8px' }}>
+                          <strong>Dirección:</strong> {order.address || 'Retiro / Sin especificar'}
+                        </p>
+                      </div>
+
+                      {/* Columna 2: Ítems y Total */}
+                      <div style={styles.orderCol}>
+                        <Typography variant="caption" color="gold" weight="bold" style={styles.colTitle}>
+                          Productos ({order.items?.reduce((sum, i) => sum + i.quantity, 0) || 0})
+                        </Typography>
+                        <div style={styles.orderItemsList}>
+                          {order.items?.map((item, idx) => (
+                            <div key={idx} style={styles.orderItemRow}>
+                              <span>{item.quantity}x {item.product?.name || 'Producto'}</span>
+                              <span style={{ fontWeight: 600 }}>${((item.product?.price || 0) * item.quantity).toLocaleString('es-AR')}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={styles.orderTotalRow}>
+                          <span>Total: <strong>${(order.total || 0).toLocaleString('es-AR')}</strong></span>
+                          <span style={styles.paymentMethodTag}>
+                            {order.paymentMethod === 'mercadopago' ? 'MercadoPago' : 'WhatsApp'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Columna 3: Gestión de Estado & Tracking */}
+                      <div style={styles.orderColActions}>
+                        <Typography variant="caption" color="gold" weight="bold" style={styles.colTitle}>
+                          Acciones & Seguimiento
+                        </Typography>
+
+                        {/* Cambiar Estado */}
+                        <div style={styles.inputGroup}>
+                          <label style={styles.label}>Estado de la Orden</label>
+                          <select
+                            value={order.status}
+                            onChange={e => handleUpdateOrderStatus(order.id, e.target.value as Order['status'])}
+                            style={styles.select}
+                          >
+                            <option value="pending">Pendiente</option>
+                            <option value="shipped">Enviada</option>
+                            <option value="completed">Completada</option>
+                          </select>
+                        </div>
+
+                        {/* Tracking Input */}
+                        <div style={styles.inputGroup}>
+                          <label style={styles.label}>N° de Seguimiento</label>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <input
+                              type="text"
+                              value={trackingDrafts[order.id] ?? ''}
+                              onChange={e => setTrackingDrafts({ ...trackingDrafts, [order.id]: e.target.value })}
+                              placeholder="Ej: AR-123456789"
+                              style={{ ...styles.input, flex: 1 }}
+                            />
+                            <button
+                              onClick={() => handleUpdateOrderTracking(order.id)}
+                              style={styles.blockSaveBtn}
+                              title="Guardar seguimiento"
+                            >
+                              <Save size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* WhatsApp Button */}
+                        <button
+                          onClick={() => handleOpenWhatsApp(order)}
+                          style={styles.whatsAppBtn}
+                        >
+                          <Phone size={14} /> WhatsApp al Cliente
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── TAB: PRODUCTOS ─────────────────────────────────────────────────── */}
       {activeTab === 'products' && (
@@ -637,6 +908,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                 </thead>
                 <tbody>
                   {products.map(product => {
+                    const isCritical = product.stock < 5;
                     const isLow = product.stock < 12;
                     return (
                       <tr key={product.id} style={styles.tableRow}>
@@ -646,6 +918,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                             <div>
                               <span style={styles.productName}>{product.name}</span>
                               <div style={styles.badgeRow}>
+                                {isCritical && <span style={styles.criticalStockBadge}>Bajo Stock</span>}
                                 {product.isFeatured && <span style={styles.featuredBadge}>Destacado</span>}
                                 {product.isNew && <span style={styles.newBadge}>Nuevo</span>}
                               </div>
@@ -668,9 +941,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({
                           }
                         </td>
                         <td style={styles.td}>
-                          <span style={{ ...styles.stockText, color: isLow ? '#A34C37' : 'inherit', fontWeight: isLow ? 'bold' : 'normal' }}>
-                            {product.stock} u.{isLow && <span style={styles.lowStockDot} />}
-                          </span>
+                          <div style={styles.quickStockControls}>
+                            <button
+                              onClick={() => handleStockChange(product, -1)}
+                              style={styles.stockControlBtn}
+                              title="Reducir stock (-1)"
+                            >
+                              <Minus size={12} />
+                            </button>
+                            <span style={{
+                              ...styles.stockText,
+                              color: isCritical ? '#A34C37' : isLow ? '#B08E62' : 'inherit',
+                              fontWeight: isLow || isCritical ? 'bold' : 'normal'
+                            }}>
+                              {product.stock} u.
+                            </span>
+                            <button
+                              onClick={() => handleStockChange(product, 1)}
+                              style={styles.stockControlBtn}
+                              title="Aumentar stock (+1)"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </div>
                         </td>
                         <td style={{ ...styles.td, textAlign: 'right' }}>
                           <div style={styles.actionsContainer}>
@@ -1148,9 +1441,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 900px) {
+          .grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+        }
         @media (max-width: 767px) {
           table { min-width: 650px !important; }
-          .grid-3 { gap: 12px !important; }
+          .grid-4 { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
@@ -1169,7 +1465,7 @@ const styles: Record<string, React.CSSProperties> = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', borderBottom: '1px solid rgba(176, 142, 98, 0.15)', paddingBottom: '20px' },
   syncBadge: { display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: '#6e7e6b', background: 'rgba(110, 126, 107, 0.1)', padding: '3px 8px', borderRadius: '20px', border: '1px solid rgba(110, 126, 107, 0.2)', fontFamily: 'var(--font-sans)' },
   logoutBtn: { borderColor: 'rgba(135, 84, 58, 0.35)', color: 'var(--color-bosque-suave)', fontSize: '0.8rem' },
-  metricsGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '28px' },
+  metricsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' },
   metricCard: { padding: '24px', display: 'flex', flexDirection: 'column', borderRadius: '16px', border: '1px solid rgba(176, 142, 98, 0.12)' },
   metricHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
   metricLabel: { fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' },
@@ -1197,6 +1493,9 @@ const styles: Record<string, React.CSSProperties> = {
   badgeRow: { display: 'flex', gap: '6px' },
   featuredBadge: { backgroundColor: 'rgba(163, 107, 78, 0.08)', color: 'var(--color-bosque-suave)', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(163, 107, 78, 0.25)' },
   newBadge: { backgroundColor: 'rgba(110, 126, 107, 0.12)', color: '#4E5E4C', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(110, 126, 107, 0.3)' },
+  criticalStockBadge: { backgroundColor: 'rgba(163, 76, 55, 0.12)', color: '#A34C37', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(163, 76, 55, 0.3)', fontWeight: 'bold' },
+  quickStockControls: { display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.5)', padding: '2px 6px', borderRadius: '8px', border: '1px solid rgba(176,142,98,0.2)' },
+  stockControlBtn: { background: 'rgba(176, 142, 98, 0.15)', border: 'none', borderRadius: '4px', cursor: 'pointer', padding: '3px 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-dark)' },
   categoryCell: { display: 'flex', flexDirection: 'column' },
   catText: { fontSize: '0.85rem', color: 'var(--color-text-dark)' },
   subcatText: { fontSize: '0.75rem', color: 'var(--color-text-muted)' },
@@ -1222,6 +1521,25 @@ const styles: Record<string, React.CSSProperties> = {
   catRowName: { display: 'block', fontWeight: 600, fontSize: '0.95rem', color: 'var(--color-text-dark)', marginBottom: '8px' },
   subcatTagsRow: { display: 'flex', gap: '6px', flexWrap: 'wrap' },
   subcatTag: { fontSize: '0.72rem', padding: '3px 8px', background: 'rgba(176, 142, 98, 0.1)', border: '1px solid rgba(176, 142, 98, 0.2)', borderRadius: '20px', color: 'var(--color-bosque-suave)' },
+  // Órdenes tab styles
+  filterGroup: { display: 'flex', gap: '8px', flexWrap: 'wrap' },
+  filterBtn: { padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(176, 142, 98, 0.25)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--color-text-muted)', transition: 'all 0.2s' },
+  filterBtnActive: { background: 'var(--color-oliva-salvia)', color: 'white', borderColor: 'var(--color-oliva-salvia)', fontWeight: 600 },
+  orderCard: { border: '1px solid rgba(176, 142, 98, 0.2)', borderRadius: '16px', background: 'rgba(255, 255, 255, 0.45)', overflow: 'hidden' },
+  orderCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: 'rgba(250, 246, 238, 0.7)', borderBottom: '1px solid rgba(176, 142, 98, 0.12)' },
+  orderIdBadge: { fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--color-text-dark)', marginRight: '12px' },
+  orderDateText: { fontSize: '0.78rem', color: 'var(--color-text-muted)' },
+  statusBadge: { fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '12px' },
+  orderCardBody: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', padding: '20px' },
+  orderCol: { display: 'flex', flexDirection: 'column', gap: '6px' },
+  orderColActions: { display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.4)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(176,142,98,0.15)' },
+  colTitle: { textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px', display: 'block' },
+  orderDetailText: { fontSize: '0.84rem', color: 'var(--color-text-dark)', margin: 0 },
+  orderItemsList: { display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(255,255,255,0.4)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(176,142,98,0.1)' },
+  orderItemRow: { display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-text-dark)' },
+  orderTotalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.88rem' },
+  paymentMethodTag: { fontSize: '0.7rem', padding: '2px 8px', background: 'rgba(176, 142, 98, 0.12)', borderRadius: '10px', color: 'var(--color-bosque-suave)', textTransform: 'uppercase', fontWeight: 600 },
+  whatsAppBtn: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 14px', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem', marginTop: '6px' },
   // Modal
   modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(44, 36, 32, 0.4)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '40px 20px', zIndex: 1200, overflowY: 'auto' },
   modalCard: { width: '100%', maxWidth: '780px', backgroundColor: 'rgba(250, 246, 238, 0.96)', border: '1px solid rgba(176, 142, 98, 0.25)', borderRadius: '24px', padding: '32px', boxShadow: '0 20px 50px rgba(44, 36, 32, 0.12)', marginBottom: '40px' },

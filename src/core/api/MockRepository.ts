@@ -467,6 +467,26 @@ export class MockRepository implements IRepository {
     return this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
   }
 
+  async updateOrderStatus(orderId: string, status: Order['status']): Promise<Order> {
+    await this.delay(300);
+    const orders = this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
+    const index = orders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error('Order not found');
+    orders[index] = { ...orders[index], status };
+    this.setStoredData<Order[]>(STORAGE_KEYS.ORDERS, orders);
+    return orders[index];
+  }
+
+  async updateOrderTracking(orderId: string, trackingNumber: string): Promise<Order> {
+    await this.delay(300);
+    const orders = this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
+    const index = orders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error('Order not found');
+    orders[index] = { ...orders[index], trackingNumber };
+    this.setStoredData<Order[]>(STORAGE_KEYS.ORDERS, orders);
+    return orders[index];
+  }
+
   // ── Métodos stub para compatibilidad con IRepository ──────────────────
 
   async getCategories(_includeHidden = false): Promise<Category[]> {

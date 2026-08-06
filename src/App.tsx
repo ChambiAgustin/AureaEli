@@ -100,10 +100,42 @@ function App() {
 
   // Application Data States
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [cartItems, setCartItems] = useState<{ product: Product; quantity: number }[]>([]);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('aurea_favorites_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [cartItems, setCartItems] = useState<{ product: Product; quantity: number }[]>(() => {
+    try {
+      const saved = localStorage.getItem('aurea_cart_v1');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [orders, setOrders] = useState<Order[]>([]);
   const [toastMsg, setToastMsg] = useState<string>('');
+
+  // Persistencia de Carrito en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('aurea_cart_v1', JSON.stringify(cartItems));
+    } catch (e) {
+      console.error('Error al guardar el carrito en localStorage:', e);
+    }
+  }, [cartItems]);
+
+  // Persistencia de Favoritos en localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('aurea_favorites_v1', JSON.stringify(favorites));
+    } catch (e) {
+      console.error('Error al guardar favoritos en localStorage:', e);
+    }
+  }, [favorites]);
 
   // Modals / Panels toggles
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
@@ -143,19 +175,20 @@ function App() {
   }, [activeTab]);
 
   // Cargar perfil y órdenes cuando hay una sesión real de Supabase Auth,
-  // y limpiarlos al cerrar sesión (antes esto era un perfil mockeado fijo)
+  // y limpiarlos al cerrar sesión
   useEffect(() => {
     const loadForSession = async (hasSession: boolean) => {
       if (!hasSession) {
         setUserProfile(null);
-        setFavorites([]);
         setOrders([]);
         return;
       }
       try {
         const profile = await apiRepository.getUserProfile();
         setUserProfile(profile);
-        setFavorites(profile.favorites || []);
+        if (profile.favorites && profile.favorites.length > 0) {
+          setFavorites(profile.favorites);
+        }
 
         const ordersData = await apiRepository.getOrders();
         setOrders(ordersData);
@@ -210,12 +243,6 @@ function App() {
 
   // Toggle favorites with persistence
   const handleToggleFavorite = async (productId: string) => {
-    if (!userProfile) {
-      triggerToast('Iniciá sesión para guardar en tus intenciones sagradas.');
-      setActiveTab('profile');
-      return;
-    }
-
     const isFav = favorites.includes(productId);
     const updatedFavs = isFav
       ? favorites.filter((id) => id !== productId)
@@ -223,18 +250,20 @@ function App() {
 
     setFavorites(updatedFavs);
 
-    const updatedProfile: UserProfile = {
-      ...userProfile,
-      favorites: updatedFavs
-    };
-    setUserProfile(updatedProfile);
+    if (userProfile) {
+      const updatedProfile: UserProfile = {
+        ...userProfile,
+        favorites: updatedFavs
+      };
+      setUserProfile(updatedProfile);
 
-    try {
-      await apiRepository.updateUserProfile(updatedProfile);
-      triggerToast(isFav ? 'Eliminado de tus intenciones.' : 'Guardado en tus intenciones sagradas.');
-    } catch (err) {
-      console.error('Error updating favorites profile:', err);
+      try {
+        await apiRepository.updateUserProfile(updatedProfile);
+      } catch (err) {
+        console.error('Error updating favorites profile:', err);
+      }
     }
+    triggerToast(isFav ? 'Eliminado de tus intenciones.' : 'Guardado en tus intenciones sagradas.');
   };
 
   // Cart operations

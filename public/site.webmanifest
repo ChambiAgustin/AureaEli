@@ -1,0 +1,17 @@
+{
+  "name": "Aurea Elizabeth — Alquimia Botánica & Ritualidad",
+  "short_name": "Aurea",
+  "description": "Un espacio dedicado a nutrir tu bienestar. Elementos de primera calidad seleccionados con amor para intencionar tus días.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0c0b",
+  "theme_color": "#c5a880",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

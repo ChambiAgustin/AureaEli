@@ -6,17 +6,17 @@ import {
   MessageSquare, 
   Sparkles, 
   CheckCircle, 
-  Wind, 
-  Heart, 
-  Lock,
-  Eye,
-  EyeOff
+  Wind,
+  ExternalLink,
+  ShoppingBag,
+  Truck
 } from 'lucide-react';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { Product, Order, UserProfile } from '../../core/api';
+import { MercadoPagoService, MercadoPagoPreferenceResponse } from '../../core/services/MercadoPagoService';
 import { WHATSAPP_URL } from '../../shared/constants';
 
 interface CheckoutFlowProps {
@@ -51,14 +51,10 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const [zipCode, setZipCode] = useState<string>('');
 
   // Form States - Payment
-  const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'mercadopago'>('whatsapp');
-  const [cardNumber, setCardNumber] = useState<string>('');
-  const [cardName, setCardName] = useState<string>('');
-  const [cardExpiry, setCardExpiry] = useState<string>('');
-  const [cardCvv, setCardCvv] = useState<string>('');
-  const [isCardFlipped, setIsCardFlipped] = useState<boolean>(false);
+  const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'whatsapp'>('mercadopago');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [mpPreference, setMpPreference] = useState<MercadoPagoPreferenceResponse | null>(null);
 
   const totalCart = cartItems.reduce((acc, curr) => acc + (curr.product.promoPrice ?? curr.product.price) * curr.quantity, 0);
 
@@ -94,28 +90,6 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
 
   if (!isOpen) return null;
 
-  // Formatting utility for credit card number
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    const formatted = value.replace(/(\d{4})(?=\d)/g, '$1 ').substring(0, 19);
-    setCardNumber(formatted);
-  };
-
-  // Formatting utility for expiry date (MM/YY)
-  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 2) {
-      value = `${value.substring(0, 2)}/${value.substring(2, 4)}`;
-    }
-    setCardExpiry(value.substring(0, 5));
-  };
-
-  // Formatting utility for CVV
-  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').substring(0, 4);
-    setCardCvv(value);
-  };
-
   // Step 2 Submission (Shipping details validated)
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,16 +100,9 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     setStep('payment');
   };
 
-  // Step 3 Submission (Process WhatsApp or simulation MercadoPago)
+  // Step 3 Submission (Process MercadoPago Checkout Pro or WhatsApp)
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (paymentMethod === 'mercadopago') {
-      if (cardNumber.length < 19 || !cardName.trim() || cardExpiry.length < 5 || cardCvv.length < 3) {
-        triggerToast('Por favor completá los datos de tu tarjeta.');
-        return;
-      }
-    }
-
     setIsSubmitting(true);
 
     const orderData = {
@@ -153,29 +120,36 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       total: totalCart,
       paymentMethod,
       address: `${address}, ${city} (CP ${zipCode})`,
+      customerPhone: phone,
     };
 
     try {
       const order = await apiRepository.createOrder(orderData);
       setCreatedOrder(order);
-      
+
+      // Limpiar carrito en localStorage
+      localStorage.removeItem('aurea_cart_v1');
+
       if (paymentMethod === 'whatsapp') {
         const itemsList = cartItems.map(i => `- ${i.quantity}x ${i.product.name} ($${(i.product.promoPrice ?? i.product.price).toLocaleString('es-AR')})`).join('\n');
         const waMsg = `Hola Aurea Elizabeth. Quiero coordinar mi pedido Ritual:\n\n${itemsList}\n\nEnvío a: ${order.address}\nTotal: $${totalCart.toLocaleString('es-AR')} (falta calcular el envío)`;
         const encodedMsg = encodeURIComponent(waMsg);
-
-        triggerToast('Redirigiendo a Asistencia por WhatsApp...');
         const whatsappUrl = `${WHATSAPP_URL}?text=${encodedMsg}`;
-        window.location.href = whatsappUrl;
-        setStep('success');
+
+        triggerToast('Orden registrada. Redirigiendo a Asistencia por WhatsApp...');
+        window.open(whatsappUrl, '_blank');
         onOrderComplete(order);
+        setStep('success');
       } else {
-        // Simular canalización de MercadoPago
-        triggerToast('Conectando con pasarela segura de MercadoPago...');
-        setTimeout(() => {
-          setStep('success');
-          onOrderComplete(order);
-        }, 2500);
+        // Mercado Pago Checkout Pro
+        const preference = await MercadoPagoService.createPreference(order, cartItems);
+        setMpPreference(preference);
+        order.mercadopagoPreferenceId = preference.id;
+        order.paymentStatus = 'pending';
+
+        triggerToast('¡Preferencia de Mercado Pago generada con éxito!');
+        onOrderComplete(order);
+        setStep('success');
       }
     } catch (err) {
       console.error('Error creating order in checkout:', err);
@@ -268,7 +242,6 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
 
                 {/* Círculo de respiración */}
                 <div style={{ position: 'relative', width: '200px', height: '200px', margin: '0 auto 40px' }}>
-                  {/* Círculo Pulsante Externo CSS */}
                   <div
                     style={{
                       position: 'absolute',
@@ -283,7 +256,6 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                     }}
                   />
                   
-                  {/* Círculo Principal */}
                   <div
                     style={{
                       position: 'absolute',
@@ -445,282 +417,99 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
           {/* ================= STEP 3: MÉTODOS DE PAGO ================= */}
           {step === 'payment' && (
             <div style={{ animation: 'fadeIn 0.6s ease' }}>
-              
-              {/* Tarjeta de Crédito Premium Interactiva (solo si MercadoPago está seleccionado) */}
-              {paymentMethod === 'mercadopago' && (
-                <div style={{ perspective: '1000px', marginBottom: '32px' }}>
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '200px',
-                      position: 'relative',
-                      transformStyle: 'preserve-3d',
-                      transition: 'transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                      transform: isCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-                    }}
-                  >
-                    {/* FRENTE DE LA TARJETA (Glassmorphism de Lujo) */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        borderRadius: '20px',
-                        background: 'linear-gradient(135deg, rgba(197, 168, 128, 0.35) 0%, rgba(140, 122, 107, 0.15) 100%)',
-                        border: '1px solid rgba(197, 168, 128, 0.4)',
-                        backdropFilter: 'blur(20px)',
-                        padding: '24px',
-                        color: 'var(--color-crema-calido)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <Typography variant="caption" color="gold" style={{ fontSize: '0.65rem' }}>Alma Aurea</Typography>
-                          <Typography variant="body" weight="semibold" style={{ fontSize: '1.1rem', letterSpacing: '0.08em', marginTop: '4px' }}>
-                            AUREA ELIZABETH
-                          </Typography>
-                        </div>
-                        {/* Chip simulado */}
-                        <div style={{ width: '40px', height: '30px', borderRadius: '6px', background: 'linear-gradient(135deg, #c5a880 0%, #e5d1b7 100%)', border: '1px solid rgba(255,255,255,0.2)' }} />
-                      </div>
-
-                      {/* Card Number */}
-                      <Typography
-                        variant="h3"
-                        style={{
-                          fontSize: '1.4rem',
-                          letterSpacing: '0.15em',
-                          fontFamily: 'monospace',
-                          textAlign: 'center',
-                          margin: '16px 0',
-                          textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                        }}
-                      >
-                        {cardNumber || '•••• •••• •••• ••••'}
-                      </Typography>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                        <div>
-                          <span style={{ opacity: 0.6, fontSize: '0.55rem', display: 'block', textTransform: 'uppercase' }}>Titular</span>
-                          <span style={{ letterSpacing: '0.05em' }}>{cardName.toUpperCase() || 'ALMA EN CALMA'}</span>
-                        </div>
-                        <div>
-                          <span style={{ opacity: 0.6, fontSize: '0.55rem', display: 'block', textTransform: 'uppercase' }}>Vence</span>
-                          <span style={{ fontFamily: 'monospace' }}>{cardExpiry || 'MM/AA'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* DORSO DE LA TARJETA */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backfaceVisibility: 'hidden',
-                        WebkitBackfaceVisibility: 'hidden',
-                        borderRadius: '20px',
-                        background: 'linear-gradient(135deg, rgba(35, 31, 28, 0.95) 0%, rgba(140, 122, 107, 0.8) 100%)',
-                        border: '1px solid rgba(197, 168, 128, 0.3)',
-                        transform: 'rotateY(180deg)',
-                        padding: '24px 0',
-                        color: 'var(--color-crema-calido)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
-                      }}
-                    >
-                      {/* Banda Magnética */}
-                      <div style={{ width: '100%', height: '40px', backgroundColor: 'var(--color-tierra-profunda)', marginTop: '8px' }} />
-                      
-                      {/* CVV Panel */}
-                      <div style={{ padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.55rem', textTransform: 'uppercase', marginRight: '10px', opacity: 0.6 }}>CVV</span>
-                        <div style={{
-                          backgroundColor: 'var(--color-crema-calido)',
-                          color: 'var(--color-tierra-profunda)',
-                          fontFamily: 'monospace',
-                          fontSize: '1rem',
-                          fontWeight: 'bold',
-                          padding: '6px 12px',
-                          borderRadius: '4px',
-                          letterSpacing: '0.1em',
-                          minWidth: '50px',
-                          textAlign: 'center',
-                          fontStyle: 'italic',
-                        }}>
-                          {cardCvv || '•••'}
-                        </div>
-                      </div>
-                      
-                      {/* Disclaimer sutil */}
-                      <p style={{ fontSize: '0.55rem', opacity: 0.4, padding: '0 24px', textAlign: 'center' }}>
-                        Esta tarjeta se procesa en el entorno simulado y seguro del templo Aurea Elizabeth.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Formulario e Interrupción de Pago */}
-              <Card className="glass-panel" style={{ padding: '28px', border: '1px solid rgba(197, 168, 128, 0.25)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-                  <CreditCard size={18} color="var(--color-dorado-mate)" />
-                  <Typography variant="h2" style={{ fontSize: '1.4rem' }}>Forma de Pago</Typography>
+              <Card className="glass-panel" style={{ padding: '32px', border: '1px solid rgba(197, 168, 128, 0.25)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
+                  <CreditCard size={20} color="var(--color-dorado-mate)" />
+                  <Typography variant="h2" style={{ fontSize: '1.4rem' }}>Seleccioná tu Forma de Pago</Typography>
                 </div>
 
-                {/* Métodos de Pago Toggle */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                {/* Métodos de Pago Toggle Elegantes */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '28px' }}>
                   <label style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '12px 16px',
+                    padding: '18px 20px',
                     borderRadius: '16px',
                     border: '1px solid',
-                    borderColor: paymentMethod === 'whatsapp' ? 'var(--color-oliva-salvia)' : 'rgba(255,255,255,0.06)',
-                    backgroundColor: paymentMethod === 'whatsapp' ? 'rgba(110, 126, 107, 0.1)' : 'transparent',
+                    borderColor: paymentMethod === 'mercadopago' ? 'var(--color-dorado-mate)' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: paymentMethod === 'mercadopago' ? 'rgba(197, 168, 128, 0.12)' : 'rgba(255,255,255,0.02)',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <input
+                        type="radio"
+                        name="paymentFlow"
+                        value="mercadopago"
+                        checked={paymentMethod === 'mercadopago'}
+                        onChange={() => setPaymentMethod('mercadopago')}
+                        style={{ accentColor: 'var(--color-dorado-mate)', cursor: 'pointer', width: '18px', height: '18px' }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Sparkles size={20} color="var(--color-dorado-mate)" />
+                        <div>
+                          <Typography variant="body" weight="semibold" style={{ fontSize: '0.95rem' }}>
+                            Pagar con Mercado Pago
+                          </Typography>
+                          <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem', display: 'block' }}>
+                            Checkout Pro oficial (Tarjetas, Débito, Efectivo)
+                          </Typography>
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-dorado-mate)', fontWeight: 'bold', background: 'rgba(197,168,128,0.15)', padding: '4px 10px', borderRadius: '12px' }}>
+                      Recomendado
+                    </span>
+                  </label>
+
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '18px 20px',
+                    borderRadius: '16px',
+                    border: '1px solid',
+                    borderColor: paymentMethod === 'whatsapp' ? 'var(--color-oliva-salvia)' : 'rgba(255,255,255,0.08)',
+                    backgroundColor: paymentMethod === 'whatsapp' ? 'rgba(110, 126, 107, 0.12)' : 'rgba(255,255,255,0.02)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <input
                         type="radio"
                         name="paymentFlow"
                         value="whatsapp"
                         checked={paymentMethod === 'whatsapp'}
                         onChange={() => setPaymentMethod('whatsapp')}
-                        style={{ accentColor: 'var(--color-oliva-salvia)', cursor: 'pointer' }}
+                        style={{ accentColor: 'var(--color-oliva-salvia)', cursor: 'pointer', width: '18px', height: '18px' }}
                       />
-                      <MessageSquare size={16} color="#25D366" />
-                      <div>
-                        <Typography variant="body" weight="medium" style={{ fontSize: '0.9rem' }}>Coordinar Pago por WhatsApp</Typography>
-                        <Typography variant="body-sm" color="muted" style={{ fontSize: '0.75rem', display: 'block' }}>Asistencia personalizada de Alma a Alma</Typography>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <MessageSquare size={20} color="#25D366" />
+                        <div>
+                          <Typography variant="body" weight="semibold" style={{ fontSize: '0.95rem' }}>
+                            Asistencia por WhatsApp
+                          </Typography>
+                          <Typography variant="body-sm" color="muted" style={{ fontSize: '0.78rem', display: 'block' }}>
+                            Coordinación personalizada y transferencia bancaria
+                          </Typography>
+                        </div>
                       </div>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-oliva-salvia)', fontWeight: 'bold' }}>Recomendado</span>
-                  </label>
-
-                  <label style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    border: '1px solid',
-                    borderColor: paymentMethod === 'mercadopago' ? 'var(--color-dorado-mate)' : 'rgba(255,255,255,0.06)',
-                    backgroundColor: paymentMethod === 'mercadopago' ? 'rgba(197, 168, 128, 0.1)' : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                  }}>
-                    <input
-                      type="radio"
-                      name="paymentFlow"
-                      value="mercadopago"
-                      checked={paymentMethod === 'mercadopago'}
-                      onChange={() => setPaymentMethod('mercadopago')}
-                      style={{ accentColor: 'var(--color-dorado-mate)', marginRight: '10px', cursor: 'pointer' }}
-                    />
-                    <Sparkles size={16} color="var(--color-dorado-mate)" style={{ marginRight: '8px' }} />
-                    <div>
-                      <Typography variant="body" weight="medium" style={{ fontSize: '0.9rem' }}>MercadoPago (Simulación de Tarjeta)</Typography>
-                      <Typography variant="body-sm" color="muted" style={{ fontSize: '0.75rem', display: 'block' }}>Acreditación instantánea y pasarela estética</Typography>
                     </div>
                   </label>
                 </div>
 
-                <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  
-                  {/* Inputs específicos para MercadoPago simulado */}
-                  {paymentMethod === 'mercadopago' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', animation: 'fadeIn 0.4s ease' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
-                          Número de Tarjeta *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={cardNumber}
-                          onChange={handleCardNumberChange}
-                          placeholder="4517 8400 1234 5678"
-                          style={inputStyle}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
-                          Nombre del Titular (como figura en tarjeta) *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={cardName}
-                          onChange={(e) => setCardName(e.target.value)}
-                          placeholder="ALMA RITUAL"
-                          style={inputStyle}
-                        />
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
-                            Fecha de Vto *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="MM/AA"
-                            value={cardExpiry}
-                            onChange={handleExpiryChange}
-                            style={inputStyle}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-muted)', display: 'block', marginBottom: '6px' }}>
-                            Código de Seg. (CVV) *
-                          </label>
-                          <input
-                            type="password"
-                            required
-                            placeholder="•••"
-                            value={cardCvv}
-                            onChange={handleCvvChange}
-                            onFocus={() => setIsCardFlipped(true)}
-                            onBlur={() => setIsCardFlipped(false)}
-                            style={inputStyle}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-muted)', justifyContent: 'center', marginTop: '6px' }}>
-                        <Lock size={12} color="var(--color-oliva-salvia)" />
-                        <span>Encriptación y pasarela segura en modo integrador</span>
-                      </div>
-                    </div>
-                  )}
-
+                <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {/* Resumen del Aporte */}
                   <div style={{
                     backgroundColor: 'rgba(255,255,255,0.02)',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    border: '1px solid rgba(197, 168, 128, 0.1)',
-                    marginTop: '10px'
+                    padding: '18px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(197, 168, 128, 0.15)',
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                      <span style={{ color: 'var(--color-text-muted)' }}>Monto Total a Aportar:</span>
-                      <span style={{ color: 'var(--color-dorado-mate)', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Monto Total a Abonar:</span>
+                      <span style={{ color: 'var(--color-dorado-mate)', fontSize: '1.3rem', fontWeight: 'bold' }}>
                         ${totalCart.toLocaleString('es-AR')}
                       </span>
                     </div>
@@ -738,15 +527,16 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
+                      gap: '8px',
+                      fontSize: '1rem',
                     }}
                   >
                     <span>
                       {isSubmitting 
-                        ? 'Canalizando energía de pago...' 
+                        ? 'Procesando orden...' 
                         : paymentMethod === 'whatsapp' 
                           ? 'Completar y Abrir WhatsApp' 
-                          : 'Confirmar y Abonar Altar'}
+                          : 'Procesar Pago con Mercado Pago'}
                     </span>
                   </Button>
                 </form>
@@ -754,60 +544,158 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
             </div>
           )}
 
-          {/* ================= STEP 4: SUCCESS PAGE ================= */}
+          {/* ================= STEP 4: SUCCESS PAGE (Glassmorphic Botánica Crema/Dorada) ================= */}
           {step === 'success' && createdOrder && (
-            <Card className="glass-panel" style={{ padding: '40px', textAlign: 'center', border: '1px solid var(--color-dorado-mate)', animation: 'scaleUpIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)' }}>
+            <div style={{
+              backgroundColor: '#f5efe4',
+              color: '#231f1c',
+              borderRadius: '24px',
+              padding: '40px 32px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(197, 168, 128, 0.4)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid #c5a880',
+              animation: 'scaleUpIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+              textAlign: 'center',
+            }}>
               <div style={{
-                width: '72px',
-                height: '72px',
+                width: '64px',
+                height: '64px',
                 borderRadius: '50%',
                 backgroundColor: 'rgba(110, 126, 107, 0.15)',
-                border: '2px solid var(--color-oliva-salvia)',
+                border: '2px solid #6e7e6b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 24px',
+                margin: '0 auto 20px',
                 animation: 'successIconPulse 2s infinite ease'
               }}>
-                <CheckCircle size={36} color="var(--color-oliva-salvia)" />
+                <CheckCircle size={32} color="#6e7e6b" />
               </div>
 
-              <Typography variant="caption" color="gold" weight="bold">✓ Ritual Completado</Typography>
-              <Typography variant="h2" style={{ marginTop: '12px', marginBottom: '20px' }}>¡Tu compra ha sido bendecida!</Typography>
+              <Typography variant="caption" style={{ color: '#8c7a6b', letterSpacing: '0.1em', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                ✓ Ritual Completado con Éxito
+              </Typography>
               
-              <Typography variant="body" color="light" style={{ fontSize: '0.95rem', marginBottom: '28px', lineHeight: '1.8' }}>
-                Registramos tu orden <strong style={{ color: 'var(--color-dorado-mate)' }}>#{createdOrder.id}</strong> con total éxito. <br />
-                Hemos despachado un mensajero botánico hacia tu dirección. <br />
-                Código de Correo: <code style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold' }}>{createdOrder.trackingNumber}</code>.
+              <Typography variant="h2" style={{ color: '#231f1c', marginTop: '8px', marginBottom: '16px', fontSize: '1.8rem', fontFamily: 'var(--font-serif)' }}>
+                ¡Tu pedido ha sido registrado!
               </Typography>
 
+              <p style={{ fontSize: '0.9rem', color: '#554f47', marginBottom: '24px', lineHeight: '1.6' }}>
+                Orden <strong style={{ color: '#8c7a6b' }}>#{createdOrder.id}</strong> • Transacción confirmada
+              </p>
+
+              {/* Resumen de Productos */}
               <div style={{
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                padding: '20px',
+                backgroundColor: 'rgba(255, 255, 255, 0.65)',
                 borderRadius: '16px',
-                border: '1px solid rgba(197, 168, 128, 0.1)',
-                marginBottom: '32px',
-                textAlign: 'left'
+                padding: '20px',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
+                marginBottom: '20px',
+                textAlign: 'left',
               }}>
-                <Typography variant="body-sm" color="muted" style={{ display: 'block', lineHeight: '1.7' }}>
-                  <strong>Pausa de Integración sugerida:</strong> Disfrutá el trayecto. Agradecé a tu cuerpo y alma por este instante de cuidado propio. Hacé 3 respiraciones profundas y sonreí.
-                </Typography>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', borderBottom: '1px solid rgba(197, 168, 128, 0.2)', paddingBottom: '8px' }}>
+                  <ShoppingBag size={18} color="#8c7a6b" />
+                  <span style={{ fontWeight: '600', fontSize: '0.85rem', color: '#231f1c', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Resumen de la Colección
+                  </span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {createdOrder.items.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#3a3530' }}>
+                      <span>{item.quantity}x {item.product.name}</span>
+                      <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>
+                        ${((item.product.promoPrice ?? item.product.price) * item.quantity).toLocaleString('es-AR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ borderTop: '1px solid rgba(197, 168, 128, 0.2)', marginTop: '14px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#231f1c' }}>
+                  <span>Total</span>
+                  <span style={{ color: '#8c7a6b', fontSize: '1.05rem' }}>${createdOrder.total.toLocaleString('es-AR')}</span>
+                </div>
               </div>
 
-              <Button
-                variant="primary"
-                onClick={onClose}
-                style={{ width: '100%', padding: '14px', borderRadius: '14px' }}
-              >
-                Volver a la Galería
-              </Button>
-            </Card>
+              {/* Detalle de Envío */}
+              <div style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.65)',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                border: '1px solid rgba(197, 168, 128, 0.25)',
+                marginBottom: '28px',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px'
+              }}>
+                <Truck size={20} color="#6e7e6b" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <span style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', color: '#8c7a6b', fontWeight: 'bold' }}>
+                    Dirección de Envío
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#3a3530', lineHeight: '1.4' }}>
+                    {createdOrder.address}
+                  </span>
+                  {createdOrder.trackingNumber && (
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: '#6e7e6b', marginTop: '4px' }}>
+                      Código de seguimiento: <strong>{createdOrder.trackingNumber}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Botones de acción */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {paymentMethod === 'mercadopago' && mpPreference && (
+                  <a
+                    href={mpPreference.init_point}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      backgroundColor: '#009EE3',
+                      color: '#ffffff',
+                      padding: '14px 24px',
+                      borderRadius: '14px',
+                      fontWeight: '600',
+                      fontSize: '0.95rem',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 12px rgba(0, 158, 227, 0.25)',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
+                    <span>Ir a Mercado Pago</span>
+                    <ExternalLink size={18} />
+                  </a>
+                )}
+
+                <Button
+                  variant="secondary"
+                  onClick={onClose}
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '14px',
+                    backgroundColor: 'rgba(35, 31, 28, 0.06)',
+                    color: '#231f1c',
+                    border: '1px solid rgba(35, 31, 28, 0.15)',
+                    fontWeight: '500'
+                  }}
+                >
+                  Seguir Explorando la Colección
+                </Button>
+              </div>
+            </div>
           )}
 
         </div>
       </main>
 
-      {/* Estilos locales para las animaciones y el credit card flip */}
+      {/* Estilos locales para las animaciones */}
       <style>{`
         @keyframes fadeInCheckout {
           from { opacity: 0; }
