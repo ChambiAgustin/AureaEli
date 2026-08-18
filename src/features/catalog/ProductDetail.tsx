@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { Product } from '../../core/api/IRepository';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
@@ -55,7 +56,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [onClose]);
 
@@ -85,20 +86,20 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
     }
   };
 
-  return (
+  const modalContent = (
     <div
       className="product-detail-backdrop"
       style={{
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(14, 11, 7, 0.85)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        zIndex: 1100,
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        padding: '20px',
         animation: 'backdropFadeIn 0.25s ease-out',
       }}
       onClick={onClose}
@@ -106,8 +107,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       <div
         className="product-detail-modal"
         style={{
-          width: 'min(92vw, 540px)',
-          maxHeight: '85dvh',
+          margin: 'auto',
+          width: 'min(92vw, 520px)',
+          maxHeight: 'min(82dvh, 700px)',
           overflowY: 'auto',
           backgroundColor: '#1C1917',
           border: '1px solid rgba(212, 175, 55, 0.2)',
@@ -117,6 +119,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
           boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
           display: 'flex',
           flexDirection: 'column',
+          zIndex: 10000,
           animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -600,6 +603,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       `}</style>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
 
 export default ProductDetail;

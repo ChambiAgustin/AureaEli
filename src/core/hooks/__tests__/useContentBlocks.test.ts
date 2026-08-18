@@ -6,6 +6,7 @@ import type { ContentBlock } from '../../api/IRepository';
 
 // Mock del cliente Supabase Realtime
 vi.mock('../../supabase/client', () => ({
+  isSupabaseConfigured: true,
   supabase: {
     channel: vi.fn(() => ({
       on: vi.fn().mockReturnThis(),
