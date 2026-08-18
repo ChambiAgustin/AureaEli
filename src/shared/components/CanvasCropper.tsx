@@ -22,19 +22,24 @@ const MAX_KB      = 220; // Límite de compresión objetivo en KB
 // WebP comprime mejor que JPEG a igual calidad; si el navegador no soporta
 // exportar WebP (toDataURL devuelve PNG en ese caso), cae a JPEG.
 function compressCanvas(canvas: HTMLCanvasElement): string {
-  const supportsWebp = canvas.toDataURL('image/webp').startsWith('data:image/webp');
-  const format = supportsWebp ? 'image/webp' : 'image/jpeg';
+  try {
+    const supportsWebp = canvas.toDataURL('image/webp').startsWith('data:image/webp');
+    const format = supportsWebp ? 'image/webp' : 'image/jpeg';
 
-  let quality = 0.82;
-  let result  = canvas.toDataURL(format, quality);
+    let quality = 0.82;
+    let result  = canvas.toDataURL(format, quality);
 
-  // Si pesa más del objetivo, reduce quality iterativamente hasta 0.60
-  while (result.length > MAX_KB * 1024 * 1.37 && quality > 0.60) {
-    quality -= 0.05;
-    result   = canvas.toDataURL(format, quality);
+    // Si pesa más del objetivo, reduce quality iterativamente hasta 0.60
+    while (result.length > MAX_KB * 1024 * 1.37 && quality > 0.60) {
+      quality -= 0.05;
+      result   = canvas.toDataURL(format, quality);
+    }
+
+    return result;
+  } catch (err) {
+    console.warn('compressCanvas SecurityError / tainted canvas:', err);
+    throw err;
   }
-
-  return result;
 }
 
 // ── Convierte base64 a File para subir a Storage ───────────────────────────
@@ -50,7 +55,7 @@ function base64ToFile(base64: string, filename: string): File {
 // ── Sube imagen a Supabase Storage y retorna URL pública ──────────────────
 async function uploadToStorage(base64: string): Promise<string> {
   const mime     = base64.match(/^data:(image\/\w+);/)?.[1] ?? 'image/jpeg';
-  const ext      = mime.split('/')[1];
+  const ext      = mime.split('/')[1] === 'jpeg' ? 'jpg' : (mime.split('/')[1] ?? 'jpg');
   const filename = `product-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const file     = base64ToFile(base64, filename);
 
@@ -163,9 +168,16 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
 
   // ── Preview en tiempo real (miniatura del resultado) ─────────────────────
   function updatePreview(img: HTMLImageElement, s: number, off: { x: number; y: number }) {
-    const out  = buildOutputCanvas(img, s, off);
-    const b64  = out.toDataURL('image/jpeg', 0.5); // Baja calidad solo para preview visual
-    setPreviewSrc(b64);
+    try {
+      const out  = buildOutputCanvas(img, s, off);
+      const b64  = out.toDataURL('image/jpeg', 0.5); // Baja calidad solo para preview visual
+      setPreviewSrc(b64);
+    } catch (err) {
+      console.warn('CanvasCropper updatePreview SecurityError/tainted canvas fallback:', err);
+      if (img.src && !img.src.startsWith('data:')) {
+        setPreviewSrc(img.src);
+      }
+    }
   }
 
   // ── Parámetros de dibujo compartidos ─────────────────────────────────────
@@ -185,7 +197,22 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     const img       = new Image();
     img.crossOrigin = 'anonymous';
     img.onload      = () => { setImage(img); setOffset({ x: 0, y: 0 }); setScale(1.0); setSizeKB(null); setUploadErr(''); };
-    img.onerror     = () => console.error('Error cargando imagen');
+    img.onerror     = () => {
+      // Fallback: Si el servidor remoto bloquea crossOrigin='anonymous', recargar sin crossOrigin
+      const fallbackImg = new Image();
+      fallbackImg.onload = () => {
+        setImage(fallbackImg);
+        setOffset({ x: 0, y: 0 });
+        setScale(1.0);
+        setSizeKB(null);
+        setUploadErr('');
+      };
+      fallbackImg.onerror = () => {
+        console.error('Error cargando imagen:', src);
+        setUploadErr('No se pudo cargar la imagen.');
+      };
+      fallbackImg.src = src;
+    };
     img.src         = src;
   };
 
@@ -227,26 +254,39 @@ export const CanvasCropper: React.FC<CanvasCropperProps> = ({
     setUploadErr('');
 
     try {
-      const out   = buildOutputCanvas(image, scale, offset);
-      const b64   = compressCanvas(out);
-      const kb    = estimateKB(b64);
-      setSizeKB(kb);
-
-      // Si la imagen no cambió respecto a la original (URL de Supabase), no re-subimos
-      if (originalSrc.current?.startsWith('http') && originalSrc.current === initialImageSrc) {
+      // Si la imagen no cambió respecto a la original (URL de Supabase/externa) y el encuadre es neutro:
+      if (originalSrc.current?.startsWith('http') && originalSrc.current === initialImageSrc && scale === 1.0 && offset.x === 0 && offset.y === 0) {
         onCrop(originalSrc.current);
         return;
       }
+
+      let b64: string;
+      try {
+        const out = buildOutputCanvas(image, scale, offset);
+        b64 = compressCanvas(out);
+      } catch (canvasErr) {
+        console.warn('CanvasCropper tainted canvas en handleConfirm:', canvasErr);
+        // Si no se puede exportar el canvas por restricciones CORS de una URL remota, devolver URL original
+        if (originalSrc.current?.startsWith('http')) {
+          onCrop(originalSrc.current);
+          return;
+        }
+        throw new Error('No se pudo procesar la imagen debido a restricciones de seguridad del navegador (CORS).');
+      }
+
+      const kb = estimateKB(b64);
+      setSizeKB(kb);
 
       const url = await uploadToStorage(b64);
       onCrop(url);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : 'Error desconocido';
-      setUploadErr(`Error al subir la imagen: ${msg}`);
+      setUploadErr(`Error al guardar la imagen: ${msg}`);
       setUploading(false);
     }
   };
+
 
   // ─────────────────────────────────────────────────────────────────────────
   return (

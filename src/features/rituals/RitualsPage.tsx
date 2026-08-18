@@ -5,13 +5,17 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import { Sparkles, Play, Pause, Heart, ShoppingBag, Wind, ChevronRight, RotateCcw, Volume2, ArrowLeft } from 'lucide-react';
+import { useCart } from '../../core/context/CartContext';
+import { useFavorites } from '../../core/context/FavoritesContext';
+import { useToast } from '../../core/context/ToastContext';
+import { useSEO } from '../../core/seo/useSEO';
 
 interface RitualsPageProps {
-  onAddToCart: (product: Product) => void;
-  favorites: string[];
-  onToggleFavorite: (productId: string) => void;
-  onAddMultipleToCart: (products: Product[]) => void;
-  triggerToast: (msg: string) => void;
+  onAddToCart?: (product: Product) => void;
+  favorites?: string[];
+  onToggleFavorite?: (productId: string) => void;
+  onAddMultipleToCart?: (products: Product[]) => void;
+  triggerToast?: (msg: string) => void;
 }
 
 interface QuizQuestion {
@@ -24,12 +28,22 @@ interface QuizQuestion {
 }
 
 export const RitualsPage: React.FC<RitualsPageProps> = ({
-  onAddToCart,
-  favorites,
-  onToggleFavorite,
-  onAddMultipleToCart,
-  triggerToast,
+  onAddToCart: propOnAddToCart,
+  favorites: propFavorites,
+  onToggleFavorite: propOnToggleFavorite,
+  onAddMultipleToCart: propOnAddMultipleToCart,
+  triggerToast: propTriggerToast,
 }) => {
+  const { addItem, addMultipleItems } = useCart();
+  const { favorites: contextFavorites, toggleFavorite: contextToggleFavorite } = useFavorites();
+  const { triggerToast: contextTriggerToast } = useToast();
+
+  const onAddToCart = propOnAddToCart || ((p: Product) => addItem(p));
+  const favorites = propFavorites || contextFavorites;
+  const onToggleFavorite = propOnToggleFavorite || contextToggleFavorite;
+  const onAddMultipleToCart = propOnAddMultipleToCart || ((products: Product[]) => addMultipleItems(products));
+  const triggerToast = propTriggerToast || contextTriggerToast;
+
   const [rituals, setRituals] = useState<Ritual[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -42,6 +56,15 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
   // Quiz Result
   const [recommendedRitual, setRecommendedRitual] = useState<Ritual | null>(null);
   const [kitProducts, setKitProducts] = useState<Product[]>([]);
+
+  useSEO({
+    title: recommendedRitual
+      ? `${recommendedRitual.title} | Rituales & Meditaciones | Aurea Elizabeth`
+      : 'Rituales & Meditaciones Guiadas | Aurea Elizabeth',
+    description: recommendedRitual
+      ? recommendedRitual.description
+      : 'Buscador de paz interior y rituales guiados con respiración circular consciente y elementos botánicos intencionados.',
+  });
 
   // Meditation Player State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -146,6 +169,18 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
     };
   }, [isPlaying, recommendedRitual]);
 
+  // Cleanup y pausa de audio cuando cambia el ritual
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlaying(false);
+    setMeditationTime(0);
+    setBreathPhase('Inhalá');
+    setBreathCountdown(4);
+  }, [recommendedRitual?.id, recommendedRitual?.audioUrl]);
+
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
@@ -221,6 +256,10 @@ export const RitualsPage: React.FC<RitualsPageProps> = ({
   };
 
   const handleResetQuiz = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     setIsPlaying(false);
     setMeditationTime(0);
     setBreathPhase('Inhalá');

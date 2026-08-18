@@ -467,6 +467,14 @@ export class MockRepository implements IRepository {
     return this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
   }
 
+  async getOrderById(orderId: string): Promise<Order | null> {
+    await this.delay(200);
+    const orders = this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
+    const found = orders.find(o => o.id === orderId);
+    return found || null;
+  }
+
+
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<Order> {
     await this.delay(300);
     const orders = this.getStoredData<Order[]>(STORAGE_KEYS.ORDERS, []);
@@ -515,13 +523,20 @@ export class MockRepository implements IRepository {
   async getContentBlocks(): Promise<ContentBlock[]> {
     await this.delay(200);
     return [
-      { key: 'home.hero.title', label: 'Hero — Título principal', value: { text: 'Rituales para el alma' } },
-      { key: 'home.hero.subtitle', label: 'Hero — Subtítulo', value: { text: 'Cosmética natural y objetos de intención.' } },
-      { key: 'catalog.title', label: 'Catálogo — Título', value: { text: 'Catálogo' } },
+      { key: 'home.hero.slogan', label: 'Eslogan del Hero', value: { text: 'Un espacio dedicado a nutrir tu bienestar. Encontrá elementos de primera calidad y seleccionados con amor para intencionar tus días, armar tus altares y conectar con tu magia cotidiana, llenando de armonía cada rincón de tu hogar.' } },
+      { key: 'home.hero.badge', label: 'Badge superior del Hero', value: { text: '— Ritual y Pausa —' } },
+      { key: 'home.manifesto.title', label: 'Título del Manifiesto', value: { text: '“Vivimos a una velocidad que no le pertenece al alma. Nuestra sagrada intención es invitarte a frenar, encender un sahumerio y fundar tu espacio de paz.”' } },
+      { key: 'home.manifesto.body', label: 'Cuerpo del Manifiesto', value: { text: 'Aurea Elizabeth nació de la búsqueda honesta de calma y texturas nobles en un mundo ruidoso. Elegimos conscientemente cada extracto herbáceo, cada veta de lino y cada trazo de arcilla cocida a horno de leña. La compra no es el fin, es la puerta de entrada a tu ritual sagrado.' } },
+      { key: 'home.categories.title', label: 'Título de Categorías', value: { text: 'Explorá por Universo Sensorial' } },
+      { key: 'home.categories.subtitle', label: 'Subtítulo de Categorías', value: { text: 'Las Líneas de Calma' } },
+      { key: 'home.featured.title', label: 'Título de Productos Destacados', value: { text: 'Destacados de la Temporada' } },
+      { key: 'home.featured.subtitle', label: 'Subtítulo de Productos Destacados', value: { text: 'Una selección artesanal de nuestros sahumerios, óleos y cerámicas más amados.' } },
+      { key: 'catalog.header.title', label: 'Título del Catálogo', value: { text: 'El Catálogo Sensorial' } },
+      { key: 'catalog.header.subtitle', label: 'Subtítulo del Catálogo', value: { text: 'Fragancias, textiles y alquimias botánicas formuladas con intenciones sagradas para elevar la energía de tu ser y tus espacios cotidianos.' } },
     ];
   }
 
-  async updateContentBlock(key: string, value: ContentBlock['value']): Promise<ContentBlock> {
-    return { key, label: key, value };
+  async updateContentBlock(key: string, value: ContentBlock['value'], label?: string): Promise<ContentBlock> {
+    return { key, label: label || key, value };
   }
 }

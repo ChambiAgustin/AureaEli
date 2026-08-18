@@ -6,16 +6,22 @@ import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { UserProfile } from '../../core/api';
 import { supabase } from '../../core/supabase/client';
+import { useAuth } from '../../core/context/AuthContext';
+import { useToast } from '../../core/context/ToastContext';
 
 interface AuthPageProps {
-  onLoginSuccess: (profile: UserProfile) => void;
-  triggerToast: (msg: string) => void;
+  onLoginSuccess?: (profile: UserProfile) => void;
+  triggerToast?: (msg: string) => void;
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({
   onLoginSuccess,
-  triggerToast,
+  triggerToast: propTriggerToast,
 }) => {
+  const { triggerToast: contextTriggerToast } = useToast();
+  const { refreshProfile } = useAuth();
+  const triggerToast = propTriggerToast || contextTriggerToast;
+
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');

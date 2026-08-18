@@ -15,9 +15,19 @@ export const AmbientAudioPlayer: React.FC = () => {
     }
   });
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(true);
+  // Expansión automática inicial solo en desktop
+  const [isExpanded, setIsExpanded] = useState<boolean>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setIsExpanded(false);
+      return;
+    }
     const timer = setTimeout(() => {
       setIsExpanded(false);
     }, 3500);
@@ -121,13 +131,27 @@ export const AmbientAudioPlayer: React.FC = () => {
     }
   };
 
+  const handleMouseEnter = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setIsExpanded(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      setIsExpanded(false);
+    }
+  };
+
   return (
     <button
       onClick={togglePlay}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       type="button"
+      className="ambient-audio-btn"
       title={isPlaying ? 'Música Ritual 🎵' : 'Música Mute 🔇'}
+      aria-label={isPlaying ? 'Música Ritual activa' : 'Música Ritual silenciada'}
       style={{
         position: 'absolute',
         left: '40px',
@@ -143,7 +167,7 @@ export const AmbientAudioPlayer: React.FC = () => {
         justifyContent: 'center',
         cursor: 'pointer',
         color: isPlaying ? 'var(--color-dorado-mate, #c5a880)' : 'var(--color-text-dark, #2c2420)',
-        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         outline: 'none',
         overflow: 'hidden',
         zIndex: 10,
@@ -164,12 +188,13 @@ export const AmbientAudioPlayer: React.FC = () => {
       )}
 
       <span
+        className="ambient-audio-label"
         style={{
           whiteSpace: 'nowrap',
           opacity: isExpanded ? 1 : 0,
           maxWidth: isExpanded ? '100px' : '0px',
           overflow: 'hidden',
-          transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           marginLeft: isExpanded ? '8px' : '0px',
           fontSize: '0.8rem',
           fontWeight: 600,
@@ -184,10 +209,22 @@ export const AmbientAudioPlayer: React.FC = () => {
           0%, 100% { filter: drop-shadow(0 0 4px rgba(197, 168, 128, 0.6)); }
           50% { filter: drop-shadow(0 0 10px rgba(197, 168, 128, 1)); }
         }
+
+        @media (max-width: 767px) {
+          .ambient-audio-btn {
+            left: 16px !important;
+            width: 38px !important;
+            height: 38px !important;
+            padding: 0 !important;
+            border-radius: 50% !important;
+          }
+          .ambient-audio-label {
+            display: none !important;
+          }
+        }
       `}</style>
     </button>
   );
 };
 
 export default AmbientAudioPlayer;
-

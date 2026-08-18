@@ -4,33 +4,59 @@ import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
 import Card from '../../shared/components/Card';
 import type { Product } from '../../core/api/IRepository';
+import { useCart } from '../../core/context/CartContext';
 
-interface SlideOutCartProps {
-  isOpen: boolean;
-  onClose: () => void;
-  cartItems: { product: Product; quantity: number }[];
-  onUpdateQuantity: (productId: string, delta: number) => void;
-  onRemoveFromCart: (productId: string) => void;
+export interface SlideOutCartProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  cartItems?: { product: Product; quantity: number }[];
+  onUpdateQuantity?: (productId: string, delta: number) => void;
+  onRemoveFromCart?: (productId: string) => void;
   onCheckoutStart: () => void;
 }
 
 export const SlideOutCart: React.FC<SlideOutCartProps> = ({
-  isOpen,
-  onClose,
-  cartItems,
-  onUpdateQuantity,
-  onRemoveFromCart,
+  isOpen: propIsOpen,
+  onClose: propOnClose,
+  cartItems: propCartItems,
+  onUpdateQuantity: propOnUpdateQuantity,
+  onRemoveFromCart: propOnRemoveFromCart,
   onCheckoutStart,
 }) => {
+  const {
+    items: contextItems,
+    isCartOpen: contextIsOpen,
+    closeCart: contextCloseCart,
+    updateQuantity: contextUpdateQuantity,
+    removeItem: contextRemoveItem,
+    cartTotal: contextCartTotal,
+    cartSavings: contextCartSavings,
+    cartCount: contextCartCount,
+  } = useCart();
+
+  const isOpen = propIsOpen !== undefined ? propIsOpen : contextIsOpen;
+  const onClose = propOnClose || contextCloseCart;
+  const cartItems = propCartItems || contextItems;
+  const onUpdateQuantity = propOnUpdateQuantity || contextUpdateQuantity;
+  const onRemoveFromCart = propOnRemoveFromCart || contextRemoveItem;
+
   if (!isOpen) return null;
 
   // Usa promoPrice si existe, si no el precio normal
   const effectivePrice = (p: Product) => p.promoPrice ?? p.price;
-  const totalCart = cartItems.reduce((acc, curr) => acc + effectivePrice(curr.product) * curr.quantity, 0);
-  const totalSavings = cartItems.reduce((acc, curr) =>
-    curr.product.promoPrice ? acc + (curr.product.price - curr.product.promoPrice) * curr.quantity : acc, 0
-  );
-  const totalItems = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
+  const totalCart = propCartItems
+    ? cartItems.reduce((acc, curr) => acc + effectivePrice(curr.product) * curr.quantity, 0)
+    : contextCartTotal;
+  const totalSavings = propCartItems
+    ? cartItems.reduce(
+        (acc, curr) =>
+          curr.product.promoPrice ? acc + (curr.product.price - curr.product.promoPrice) * curr.quantity : acc,
+        0
+      )
+    : contextCartSavings;
+  const totalItems = propCartItems
+    ? cartItems.reduce((acc, curr) => acc + curr.quantity, 0)
+    : contextCartCount;
 
   return (
     <>
@@ -75,13 +101,25 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
         }}
       >
         {/* Cabecera del Carrito */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '16px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            paddingBottom: '16px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ShoppingCart size={20} color="var(--color-dorado-mate)" />
-            <Typography variant="h3" color="light" style={{ fontSize: '1.4rem' }}>Tu Altar Sagrado</Typography>
+            <Typography variant="h3" color="light" style={{ fontSize: '1.4rem' }}>
+              Tu Altar Sagrado
+            </Typography>
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar carrito"
             style={{
               background: 'rgba(255,255,255,0.03)',
               border: '1px solid rgba(197, 168, 128, 0.2)',
@@ -109,12 +147,41 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
         </div>
 
         {/* Listado de Productos */}
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            paddingRight: '4px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            marginBottom: '20px',
+          }}
+        >
           {cartItems.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60%', textAlign: 'center', padding: '0 20px' }}>
-              <ShoppingCart size={48} color="var(--color-dorado-mate)" style={{ opacity: 0.4, marginBottom: '16px' }} />
-              <Typography variant="h3" color="light" style={{ fontSize: '1.2rem', marginBottom: '8px' }}>El carrito está vacío</Typography>
-              <Typography variant="body-sm" style={{ fontSize: '0.85rem', marginBottom: '20px', color: 'rgba(247, 244, 240, 0.7)' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '60%',
+                textAlign: 'center',
+                padding: '0 20px',
+              }}
+            >
+              <ShoppingCart
+                size={48}
+                color="var(--color-dorado-mate)"
+                style={{ opacity: 0.4, marginBottom: '16px' }}
+              />
+              <Typography variant="h3" color="light" style={{ fontSize: '1.2rem', marginBottom: '8px' }}>
+                El carrito está vacío
+              </Typography>
+              <Typography
+                variant="body-sm"
+                style={{ fontSize: '0.85rem', marginBottom: '20px', color: 'rgba(247, 244, 240, 0.7)' }}
+              >
                 Aún no has incorporado ningún producto al carrito.
               </Typography>
               <Button variant="primary" size="sm" onClick={onClose}>
@@ -134,7 +201,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                   border: '1px solid rgba(197, 168, 128, 0.1)',
                   borderRadius: '16px',
                   transition: 'transform 0.2s ease',
-                  color: 'var(--color-crema-calido)'
+                  color: 'var(--color-crema-calido)',
                 }}
               >
                 <img
@@ -150,10 +217,24 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                 />
 
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <Typography variant="caption" color="gold" style={{ fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}>
+                  <Typography
+                    variant="caption"
+                    color="gold"
+                    style={{ fontSize: '0.6rem', display: 'block', marginBottom: '2px' }}
+                  >
                     {item.product.category}
                   </Typography>
-                  <Typography variant="body" color="light" weight="medium" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Typography
+                    variant="body"
+                    color="light"
+                    weight="medium"
+                    style={{
+                      fontSize: '0.9rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {item.product.name}
                   </Typography>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
@@ -161,12 +242,27 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                       ${effectivePrice(item.product).toLocaleString('es-AR')}
                     </Typography>
                     {item.product.promoPrice && (
-                      <span style={{ fontSize: '0.7rem', color: 'rgba(247,244,240,0.35)', textDecoration: 'line-through' }}>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          color: 'rgba(247,244,240,0.35)',
+                          textDecoration: 'line-through',
+                        }}
+                      >
                         ${item.product.price.toLocaleString('es-AR')}
                       </span>
                     )}
                     {item.product.promoPrice && (
-                      <span style={{ fontSize: '0.6rem', background: 'rgba(163,76,55,0.25)', color: '#e07060', borderRadius: 4, padding: '1px 5px', fontWeight: 700 }}>
+                      <span
+                        style={{
+                          fontSize: '0.6rem',
+                          background: 'rgba(163,76,55,0.25)',
+                          color: '#e07060',
+                          borderRadius: 4,
+                          padding: '1px 5px',
+                          fontWeight: 700,
+                        }}
+                      >
                         PROMO
                       </span>
                     )}
@@ -175,17 +271,47 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
 
                 {/* Controles del artículo */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '2px 4px', backgroundColor: 'rgba(255,255,255,0.01)' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '8px',
+                      padding: '2px 4px',
+                      backgroundColor: 'rgba(255,255,255,0.01)',
+                    }}
+                  >
                     <button
                       onClick={() => onUpdateQuantity(item.product.id, -1)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-crema-calido)', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      aria-label="Disminuir cantidad"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--color-crema-calido)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '2px',
+                      }}
                     >
                       <Minus size={10} />
                     </button>
-                    <span style={{ fontSize: '0.75rem', minWidth: '14px', textAlign: 'center', fontWeight: '500' }}>{item.quantity}</span>
+                    <span style={{ fontSize: '0.75rem', minWidth: '14px', textAlign: 'center', fontWeight: '500' }}>
+                      {item.quantity}
+                    </span>
                     <button
                       onClick={() => onUpdateQuantity(item.product.id, 1)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-crema-calido)', display: 'flex', alignItems: 'center', padding: '2px' }}
+                      aria-label="Aumentar cantidad"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--color-crema-calido)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '2px',
+                      }}
                     >
                       <Plus size={10} />
                     </button>
@@ -193,6 +319,7 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
 
                   <button
                     onClick={() => onRemoveFromCart(item.product.id)}
+                    aria-label="Eliminar producto"
                     style={{
                       background: 'none',
                       border: 'none',
@@ -205,8 +332,8 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
                       opacity: 0.8,
                       transition: 'opacity 0.2s',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
                   >
                     <Trash2 size={10} />
                     <span>Eliminar</span>
@@ -219,25 +346,70 @@ export const SlideOutCart: React.FC<SlideOutCartProps> = ({
 
         {/* Resumen y Botón de Pago */}
         {cartItems.length > 0 && (
-          <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div
+            style={{
+              borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+              paddingTop: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+            }}
+          >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(247, 244, 240, 0.7)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  color: 'rgba(247, 244, 240, 0.7)',
+                }}
+              >
                 <span>Artículos en Altar</span>
                 <span style={{ color: 'var(--color-crema-calido)' }}>{totalItems}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(247, 244, 240, 0.7)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  color: 'rgba(247, 244, 240, 0.7)',
+                }}
+              >
                 <span>Entrega Botánica</span>
                 <span style={{ color: 'var(--color-oliva-salvia)', fontWeight: 'bold' }}>Bonificada (Gratis)</span>
               </div>
               {totalSavings > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e07060', fontSize: '0.82rem' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    color: '#e07060',
+                    fontSize: '0.82rem',
+                  }}
+                >
                   <span>Ahorrás con promos</span>
                   <span style={{ fontWeight: 700 }}>-${totalSavings.toLocaleString('es-AR')}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', marginTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.03)', paddingTop: '8px', color: 'var(--color-crema-calido)' }}>
-                <Typography variant="body" color="light" weight="medium">Aporte Total</Typography>
-                <span style={{ color: 'var(--color-dorado-mate)', fontWeight: 'bold', fontFamily: 'var(--font-sans)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '1.15rem',
+                  marginTop: '4px',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.03)',
+                  paddingTop: '8px',
+                  color: 'var(--color-crema-calido)',
+                }}
+              >
+                <Typography variant="body" color="light" weight="medium">
+                  Aporte Total
+                </Typography>
+                <span
+                  style={{
+                    color: 'var(--color-dorado-mate)',
+                    fontWeight: 'bold',
+                    fontFamily: 'var(--font-sans)',
+                  }}
+                >
                   ${totalCart.toLocaleString('es-AR')}
                 </span>
               </div>

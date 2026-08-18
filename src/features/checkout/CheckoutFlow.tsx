@@ -18,24 +18,53 @@ import { apiRepository } from '../../core/api';
 import type { Product, Order, UserProfile } from '../../core/api';
 import { MercadoPagoService, type MercadoPagoPreferenceResponse } from '../../core/services/MercadoPagoService';
 import { WHATSAPP_URL } from '../../shared/constants';
+import { useCart } from '../../core/context/CartContext';
+import { useAuth } from '../../core/context/AuthContext';
+import { useToast } from '../../core/context/ToastContext';
+import { useSEO } from '../../core/seo/useSEO';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface CheckoutFlowProps {
-  isOpen: boolean;
-  onClose: () => void;
-  cartItems: { product: Product; quantity: number }[];
-  userProfile: UserProfile | null;
-  onOrderComplete: (order: Order) => void;
-  triggerToast: (msg: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  cartItems?: { product: Product; quantity: number }[];
+  userProfile?: UserProfile | null;
+  onOrderComplete?: (order: Order) => void;
+  triggerToast?: (msg: string) => void;
 }
 
 export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
-  isOpen,
-  onClose,
-  cartItems,
-  userProfile,
-  onOrderComplete,
-  triggerToast,
+  isOpen: propIsOpen,
+  onClose: propOnClose,
+  cartItems: propCartItems,
+  userProfile: propUserProfile,
+  onOrderComplete: propOnOrderComplete,
+  triggerToast: propTriggerToast,
 }) => {
+  useSEO({
+    title: 'Finalizar Compra Consciente | Aurea Elizabeth',
+    description: 'Completá tu compra de elementos botánicos y rituales conscientes en Aurea Elizabeth con pasarela segura.',
+  });
+
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { items: contextCartItems, clearCart } = useCart();
+  const { userProfile: contextUserProfile } = useAuth();
+  const { triggerToast: contextTriggerToast } = useToast();
+
+  const urlStatus = searchParams.get('status') || searchParams.get('collection_status');
+  const urlOrderId = searchParams.get('order_id') || searchParams.get('external_reference');
+
+  const isOpen = propIsOpen !== undefined ? propIsOpen : true;
+  const onClose = propOnClose || (() => navigate('/catalogo'));
+  const cartItems = propCartItems || contextCartItems;
+  const userProfile = propUserProfile !== undefined ? propUserProfile : contextUserProfile;
+  const triggerToast = propTriggerToast || contextTriggerToast;
+  const onOrderComplete = propOnOrderComplete || ((_order: Order) => {
+    clearCart();
+    localStorage.removeItem('aurea_cart_v2');
+    localStorage.removeItem('aurea_cart_v1');
+  });
   // Steps: 'breath' | 'shipping' | 'payment' | 'success'
   const [step, setStep] = useState<'breath' | 'shipping' | 'payment' | 'success'>('breath');
   const [breathPhase, setBreathPhase] = useState<'Inhalá' | 'Retené' | 'Exhalá' | 'Conectá'>('Inhalá');
@@ -57,6 +86,60 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const [mpPreference, setMpPreference] = useState<MercadoPagoPreferenceResponse | null>(null);
 
   const totalCart = cartItems.reduce((acc, curr) => acc + (curr.product.promoPrice ?? curr.product.price) * curr.quantity, 0);
+
+  // Detección de Retorno de Mercado Pago vía URL params (?status=success&order_id=...)
+  useEffect(() => {
+    if (!urlStatus) return;
+
+    if (urlStatus === 'success' || urlStatus === 'approved') {
+      clearCart();
+      localStorage.removeItem('aurea_cart_v2');
+      localStorage.removeItem('aurea_cart_v1');
+
+      if (urlOrderId) {
+        apiRepository.getOrderById(urlOrderId).then((foundOrder) => {
+          if (foundOrder) {
+            setCreatedOrder(foundOrder);
+          } else {
+            setCreatedOrder({
+              id: urlOrderId,
+              userProfile: userProfile || {
+                id: 'guest',
+                name: fullName || 'Cliente Aurea',
+                email: email || '',
+                stressLevel: 'medium',
+                aromaPreferences: [],
+                skinType: 'normal',
+                completedRituals: [],
+                favorites: [],
+              },
+              items: [],
+              status: 'completed',
+              total: 0,
+              paymentMethod: 'mercadopago',
+              address: 'Registrada en Mercado Pago',
+              createdAt: new Date().toISOString(),
+              paymentStatus: 'approved',
+            });
+          }
+          setStep('success');
+          triggerToast('¡Pago acreditado con éxito! Tu ritual ya está en preparación.');
+        }).catch(() => {
+          setStep('success');
+          triggerToast('¡Pago acreditado con éxito! Tu ritual ya está en preparación.');
+        });
+      } else {
+        setStep('success');
+        triggerToast('¡Pago acreditado con éxito! Tu ritual ya está en preparación.');
+      }
+    } else if (urlStatus === 'failure' || urlStatus === 'rejected') {
+      triggerToast('El pago no pudo completarse. Podés intentar nuevamente o elegir WhatsApp.');
+      setStep('payment');
+    } else if (urlStatus === 'pending') {
+      triggerToast('Tu pago se encuentra en proceso de acreditación en Mercado Pago.');
+      setStep('payment');
+    }
+  }, [urlStatus, urlOrderId, clearCart, triggerToast, userProfile, fullName, email]);
 
   // Breath Pause Logic (Step 1)
   useEffect(() => {
@@ -86,7 +169,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isOpen, step, isBreathDone]);
+  }, [isOpen, step, isBreathDone, triggerToast]);
 
   if (!isOpen) return null;
 
@@ -127,12 +210,44 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       const order = await apiRepository.createOrder(orderData);
       setCreatedOrder(order);
 
-      // Limpiar carrito en localStorage
+      // Limpiar carrito unificado
+      clearCart();
+      localStorage.removeItem('aurea_cart_v2');
       localStorage.removeItem('aurea_cart_v1');
 
       if (paymentMethod === 'whatsapp') {
-        const itemsList = cartItems.map(i => `- ${i.quantity}x ${i.product.name} ($${(i.product.promoPrice ?? i.product.price).toLocaleString('es-AR')})`).join('\n');
-        const waMsg = `Hola Aurea Elizabeth. Quiero coordinar mi pedido Ritual:\n\n${itemsList}\n\nEnvío a: ${order.address}\nTotal: $${totalCart.toLocaleString('es-AR')} (falta calcular el envío)`;
+        const itemsList = cartItems
+          .map(
+            (i) =>
+              `• ${i.quantity}x *${i.product.name}* — $${((i.product.promoPrice ?? i.product.price) * i.quantity).toLocaleString('es-AR')}`
+          )
+          .join('\n');
+
+        const orderIdDisplay = order.id.startsWith('order-') ? order.id.slice(6) : order.id.slice(0, 8);
+
+        const waMsg = [
+          '🌿 *ÁUREA ELIZABETH* • _Altar & Ritual Botánico_',
+          '━━━━━━━━━━━━━━━━━━━━━',
+          '✨ *NUEVA ORDEN DE COMPRA CONSCIENTE*',
+          `📋 *N° de Pedido:* #${orderIdDisplay.toUpperCase()}`,
+          `📅 *Fecha:* ${new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+          '',
+          `👤 *Cliente:* ${fullName}`,
+          `📧 *Email:* ${email}`,
+          `📱 *Teléfono:* ${phone}`,
+          '',
+          '📦 *ELEMENTOS SELECCIONADOS:*',
+          itemsList,
+          '',
+          `💰 *Total de Productos:* $${totalCart.toLocaleString('es-AR')}`,
+          `📍 *Dirección de Entrega:* ${address}, ${city} (CP ${zipCode})`,
+          '🚚 *Envío:* A coordinar según localidad / correo',
+          '',
+          '💳 *Forma de Pago:* Transferencia Bancaria / Efectivo',
+          '━━━━━━━━━━━━━━━━━━━━━',
+          '🕯️ _Aguardamos los datos de la cuenta bancaria para concretar la transferencia y dar inicio a la preparación artesanal de nuestro ritual. ¡Muchas gracias!_'
+        ].join('\n');
+
         const encodedMsg = encodeURIComponent(waMsg);
         const whatsappUrl = `${WHATSAPP_URL}?text=${encodedMsg}`;
 
@@ -142,12 +257,13 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         setStep('success');
       } else {
         // Mercado Pago Checkout Pro
+        triggerToast('Generando pasarela de pago segura...');
         const preference = await MercadoPagoService.createPreference(order, cartItems);
         setMpPreference(preference);
         order.mercadopagoPreferenceId = preference.id;
         order.paymentStatus = 'pending';
 
-        triggerToast('¡Preferencia de Mercado Pago generada con éxito!');
+        triggerToast('¡Preferencia de Mercado Pago lista!');
         onOrderComplete(order);
         setStep('success');
       }
@@ -158,6 +274,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <div
@@ -601,20 +718,27 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {createdOrder.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#3a3530' }}>
-                      <span>{item.quantity}x {item.product.name}</span>
-                      <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>
-                        ${((item.product.promoPrice ?? item.product.price) * item.quantity).toLocaleString('es-AR')}
-                      </span>
+                  {(createdOrder.items && createdOrder.items.length > 0) ? (
+                    createdOrder.items.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#3a3530' }}>
+                        <span>{item.quantity}x {item.product?.name || 'Producto'}</span>
+                        <span style={{ fontWeight: '500', fontFamily: 'monospace' }}>
+                          ${(((item.product?.promoPrice ?? item.product?.price) || 0) * item.quantity).toLocaleString('es-AR')}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ fontSize: '0.85rem', color: '#554f47', fontStyle: 'italic' }}>
+                      Transacción confirmada. Tu selección está en proceso de armado.
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 <div style={{ borderTop: '1px solid rgba(197, 168, 128, 0.2)', marginTop: '14px', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#231f1c' }}>
                   <span>Total</span>
-                  <span style={{ color: '#8c7a6b', fontSize: '1.05rem' }}>${createdOrder.total.toLocaleString('es-AR')}</span>
+                  <span style={{ color: '#8c7a6b', fontSize: '1.05rem' }}>${(createdOrder.total || totalCart || 0).toLocaleString('es-AR')}</span>
                 </div>
+
               </div>
 
               {/* Detalle de Envío */}

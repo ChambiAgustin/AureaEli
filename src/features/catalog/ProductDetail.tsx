@@ -1,518 +1,548 @@
 import React, { useState, useEffect } from 'react';
 import type { Product } from '../../core/api/IRepository';
-import { apiRepository } from '../../core/api';
 import Typography from '../../shared/components/Typography';
 import Button from '../../shared/components/Button';
-import { X, Heart, ShoppingCart, Sparkles, Leaf } from 'lucide-react';
+import { Heart, ShoppingCart, Leaf, Plus, Minus } from 'lucide-react';
 import { HapticsService } from '../../core/services/HapticsService';
+import { useCart } from '../../core/context/CartContext';
+import { useFavorites } from '../../core/context/FavoritesContext';
+import { useSEO } from '../../core/seo/useSEO';
 
 interface ProductDetailProps {
   product: Product;
   onClose: () => void;
-  onAddToCart: (product: Product) => void;
-  isFavorite: boolean;
-  onToggleFavorite: (productId: string) => void;
+  onAddToCart?: (product: Product) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (productId: string) => void;
 }
 
 export const ProductDetail: React.FC<ProductDetailProps> = ({
   product,
   onClose,
-  onAddToCart,
-  isFavorite,
-  onToggleFavorite,
+  onAddToCart: propOnAddToCart,
+  isFavorite: propIsFavorite,
+  onToggleFavorite: propOnToggleFavorite,
 }) => {
-  const [activeProduct, setActiveProduct] = useState<Product>(product);
-  const [recommended, setRecommended] = useState<Product[]>([]);
-  const [loadingRecommended, setLoadingRecommended] = useState<boolean>(true);
+  useSEO({
+    title: `${product.name} | Aurea Elizabeth`,
+    description:
+      product.description ||
+      product.sensoryDescription ||
+      'Elemento de alquimia botánica seleccionado con amor para intencionar tus días.',
+    image: product.imageUrl,
+    type: 'product',
+  });
 
-  const INTENCIONES_MAP: Record<string, string> = {
-    'copal y rosas': 'Copal y Rosas: Sintonía de amor propio y purificación áurica. El copal limpia las energías estancadas abriendo el canal espiritual, mientras que los pétalos de rosa atraen la armonía y la compasión hacia uno mismo y el entorno.',
-    'copal': 'Copal Sagrado: Resina ancestral de purificación y conexión espiritual. Limpia ambientes de densidades energéticas, elevando la vibración del espacio y favoreciendo estados meditativos profundos.',
-    'rosas': 'Rosas Místicas: Elemento dulce y femenino para consagrar la armonía, la ternura y la vibración del amor. Ideal para atenuar tensiones cotidianas y endulzar el aire áurico de tu hogar.',
-    'sándalo': 'Sándalo Sagrado: Protector espiritual y pacificador mental. Calma la ansiedad, estimula el enraizamiento y propicia una atmósfera de serenidad mental ideal para la introspección y el yoga.',
-    'lavanda': 'Lavanda Silvestre: Elixir de relajación profunda y paz nocturna. Su sutil humo ayuda a inducir el descanso físico y mental, aplacando la hiperactividad del sistema nervioso.',
-    'romero': 'Romero Consagrado: Claridad mental, protección activa y renovación energética. Ideal para encender al comenzar tus tareas, estimulando el foco intelectual y disipando las dudas mentales.'
-  };
+  const { addItem } = useCart();
+  const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
-  const getIntencionTexto = () => {
-    const nameLower = activeProduct.name.toLowerCase();
-    const descLower = activeProduct.description?.toLowerCase() || '';
-    const tagsLower = activeProduct.tags?.map(t => t.toLowerCase()) || [];
-    
-    for (const [key, value] of Object.entries(INTENCIONES_MAP)) {
-      if (nameLower.includes(key) || descLower.includes(key) || tagsLower.includes(key)) {
-        return value;
-      }
-    }
-    
-    return 'Armonía Botánica: Intención sagrada y vibración natural. Sahumado artesanal elaborado a base de resinas nobles y hierbas medicinales seleccionadas con amor para purificar tu ambiente, restaurar la calma y consagrar tu santuario cotidiano.';
-  };
+  const isFavorite = propIsFavorite !== undefined ? propIsFavorite : checkIsFavorite(product.id);
+  const onToggleFavorite = propOnToggleFavorite || toggleFavorite;
+  const onAddToCart = propOnAddToCart || ((p: Product) => addItem(p));
 
+  const [quantity, setQuantity] = useState<number>(1);
+
+  // Soporte para tecla Escape y bloqueo de scroll de fondo
   useEffect(() => {
-    setActiveProduct(product);
-  }, [product]);
-
-  useEffect(() => {
-    const fetchRecommended = async () => {
-      setLoadingRecommended(true);
-      try {
-        const allProducts = await apiRepository.getProducts();
-        const filtered = allProducts
-          .filter((p) => p.id !== activeProduct.id)
-          .filter(
-            (p) =>
-              p.category === activeProduct.category ||
-              p.tags.some((t) => activeProduct.tags.includes(t))
-          )
-          .slice(0, 3);
-        
-        setRecommended(filtered);
-      } catch (error) {
-        console.error('Error fetching recommended products:', error);
-      } finally {
-        setLoadingRecommended(false);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
       }
     };
 
-    fetchRecommended();
-  }, [activeProduct]);
-
-  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
+
     return () => {
+      window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, []);
+  }, [onClose]);
+
+  // Manejo de incremento y decremento de cantidad
+  const handleIncrease = () => {
+    if (product.stock && quantity < product.stock) {
+      HapticsService.selection();
+      setQuantity((prev) => prev + 1);
+    }
+  };
+
+  const handleDecrease = () => {
+    if (quantity > 1) {
+      HapticsService.selection();
+      setQuantity((prev) => prev - 1);
+    }
+  };
+
+  // Agregar al carrito considerando la cantidad seleccionada
+  const handleAdd = () => {
+    if (product.stock === 0) return;
+    HapticsService.success();
+    for (let i = 0; i < quantity; i++) {
+      onAddToCart(product);
+    }
+  };
 
   return (
-    <div 
+    <div
       className="product-detail-backdrop"
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: 'rgba(15, 12, 11, 0.82)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        zIndex: 2000,
-        pointerEvents: 'auto',
+        inset: 0,
+        backgroundColor: 'rgba(14, 11, 7, 0.85)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        zIndex: 1100,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '20px',
-        animation: 'backdropFadeIn 0.3s ease-out'
+        padding: '16px',
+        animation: 'backdropFadeIn 0.25s ease-out',
       }}
       onClick={onClose}
     >
-      <div 
+      <div
         className="product-detail-modal"
         style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: 'min(90vw, 950px)',
-          maxHeight: '90vh',
+          width: 'min(92vw, 540px)',
+          maxHeight: '85dvh',
           overflowY: 'auto',
-          backgroundColor: 'rgba(245, 239, 228, 0.95)',
-          borderRadius: '28px',
-          border: '1.5px solid var(--color-dorado-mate, #c5a880)',
-          boxShadow: '0 30px 90px rgba(0,0,0,0.6)',
-          padding: '32px',
+          backgroundColor: '#1C1917',
+          border: '1px solid rgba(212, 175, 55, 0.2)',
+          borderRadius: '16px',
+          position: 'relative',
+          padding: '24px',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
           display: 'flex',
           flexDirection: 'column',
-          animation: 'modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+          animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Botón "✕" de cierre prominente */}
+        {/* Botón de cierre '✕' accesible */}
         <button
           className="product-detail-close-btn"
           onClick={onClose}
           type="button"
-          aria-label="Cerrar modal"
+          aria-label="Cerrar detalle de producto"
           style={{
             position: 'absolute',
-            top: '20px',
-            right: '20px',
-            zIndex: 100,
-            width: '44px',
-            height: '44px',
+            top: '16px',
+            right: '16px',
+            zIndex: 50,
+            width: '40px',
+            height: '40px',
             borderRadius: '50%',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            color: '#FDFBF7',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            border: '1.5px solid var(--color-dorado-mate, #c5a880)',
-            color: 'var(--color-tierra-profunda, #0f0c0b)',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+            fontSize: '1.1rem',
+            fontWeight: '600',
+            transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'rotate(90deg)';
-            e.currentTarget.style.boxShadow = '0 0 20px rgba(197, 168, 128, 0.8), 0 4px 15px rgba(0,0,0,0.2)';
-            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.18)';
+            e.currentTarget.style.borderColor = 'rgba(212, 175, 55, 0.5)';
+            e.currentTarget.style.transform = 'scale(1.05)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'rotate(0deg)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
           ✕
         </button>
 
-        {/* Layout en dos columnas */}
-        <div className="grid-responsive-2" style={{ gap: '28px', alignItems: 'flex-start' }}>
-          
-          {/* Columna Izquierda: Foto gigante HD con bordes suaves de 20px */}
-          <div 
-            className="product-detail-image-container" 
+        {/* Imagen del producto de altura controlada */}
+        <div
+          className="product-detail-image-wrapper"
+          style={{
+            width: '100%',
+            maxHeight: '280px',
+            height: '240px',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            marginBottom: '20px',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="product-detail-image"
             style={{
-              position: 'relative',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 15px 35px rgba(15, 12, 11, 0.15)',
-              backgroundColor: 'rgba(0,0,0,0.03)',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              borderRadius: '12px',
+              display: 'block',
             }}
-          >
-            <img 
-              className="product-detail-img"
-              src={activeProduct.imageUrl} 
-              alt={activeProduct.name} 
+          />
+          {product.stock <= 5 && product.stock > 0 && (
+            <span
               style={{
-                width: '100%',
-                height: '100%',
-                maxHeight: '520px',
-                objectFit: 'cover',
-                borderRadius: '20px',
-                display: 'block'
+                position: 'absolute',
+                top: '12px',
+                left: '12px',
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                padding: '4px 10px',
+                backgroundColor: 'rgba(158, 98, 82, 0.9)',
+                color: '#FDFBF7',
+                borderRadius: '8px',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
               }}
-            />
-          </div>
-
-          {/* Columna Derecha: Detalle Sensorial y Chips */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            
-            {/* Categoría & Stock */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#a38053', fontWeight: 600 }}>
-                {activeProduct.category} — {activeProduct.subcategory}
-              </span>
-              
-              {activeProduct.stock <= 5 && activeProduct.stock > 0 && (
-                <span style={{
-                  fontSize: '0.68rem',
-                  textTransform: 'uppercase',
-                  padding: '3px 10px',
-                  backgroundColor: 'rgba(158, 98, 82, 0.12)',
-                  border: '1px solid rgba(158, 98, 82, 0.3)',
-                  color: '#9e6252',
-                  borderRadius: '12px',
-                  fontWeight: '600'
-                }}>
-                  Últimos Cupos
-                </span>
-              )}
-            </div>
-
-            {/* Nombre */}
-            <Typography variant="h2" style={{ fontSize: '1.9rem', color: '#0f0c0b', marginBottom: '14px', lineHeight: '1.2' }}>
-              {activeProduct.name}
-            </Typography>
-
-            {/* Descripción poética destacada */}
-            <div style={{
-              borderLeft: '3px solid var(--color-dorado-mate, #c5a880)',
-              padding: '12px 16px',
-              marginBottom: '20px',
-              backgroundColor: 'rgba(197, 168, 128, 0.08)',
-              borderRadius: '0 12px 12px 0'
-            }}>
-              <p style={{ fontSize: '0.96rem', color: '#3d322c', fontStyle: 'italic', margin: 0, lineHeight: '1.6' }}>
-                "{activeProduct.sensoryDescription}"
-              </p>
-            </div>
-
-            {/* Chip de Intención Sagrada */}
-            <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <Sparkles size={16} color="var(--color-dorado-mate, #c5a880)" />
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#0f0c0b' }}>
-                  Intención Sagrada
-                </span>
-              </div>
-              <div style={{
-                padding: '14px 18px',
-                borderRadius: '16px',
-                backgroundColor: 'rgba(197, 168, 128, 0.12)',
-                border: '1px solid rgba(197, 168, 128, 0.35)',
-                color: '#2c2420',
-                fontSize: '0.88rem',
-                lineHeight: '1.6'
-              }}>
-                {getIntencionTexto()}
-              </div>
-            </div>
-
-            {/* Chips de Aroma e Ingredientes */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-              
-              {/* Chip Aroma */}
-              {activeProduct.aroma && (
-                <div>
-                  <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#594d42', marginBottom: '6px' }}>
-                    Aroma Principal
-                  </span>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    backgroundColor: 'rgba(79, 94, 76, 0.12)',
-                    border: '1px solid rgba(79, 94, 76, 0.3)',
-                    color: '#2b3829',
-                    fontFamily: 'var(--font-sans)'
-                  }}>
-                    🌿 {activeProduct.aroma}
-                  </span>
-                </div>
-              )}
-
-              {/* Chips Ingredientes */}
-              {activeProduct.ingredients && activeProduct.ingredients.length > 0 && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                    <Leaf size={14} color="var(--color-oliva-salvia, #4f5e4c)" />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#594d42' }}>
-                      Ingredientes Botánicos
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {activeProduct.ingredients.map((ing) => (
-                      <span 
-                        key={ing}
-                        style={{
-                          fontSize: '0.8rem',
-                          fontWeight: 500,
-                          padding: '6px 14px',
-                          borderRadius: '20px',
-                          backgroundColor: 'rgba(197, 168, 128, 0.15)',
-                          border: '1px solid rgba(197, 168, 128, 0.4)',
-                          color: '#3d3024',
-                          fontFamily: 'var(--font-sans)'
-                        }}
-                      >
-                        {ing}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            </div>
-
-            {/* Fila de Precio y CTA */}
-            <div className="product-detail-purchase-row" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '16px',
-              borderTop: '1px solid rgba(197, 168, 128, 0.25)',
-              paddingTop: '20px',
-              marginTop: 'auto'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <Typography variant="h2" style={{ fontSize: '2rem', color: '#a38053', fontWeight: 700 }}>
-                    ${(activeProduct.promoPrice ?? activeProduct.price).toLocaleString('es-AR')}
-                  </Typography>
-                  {activeProduct.promoPrice && (
-                    <span style={{ fontSize: '1.1rem', color: '#8a7d6b', textDecoration: 'line-through' }}>
-                      ${activeProduct.price.toLocaleString('es-AR')}
-                    </span>
-                  )}
-                  {activeProduct.promoPrice && (
-                    <span style={{ fontSize: '0.72rem', background: 'rgba(158,98,82,0.15)', color: '#9e6252', border: '1px solid rgba(158,98,82,0.3)', borderRadius: 6, padding: '3px 8px', fontWeight: 700, letterSpacing: '0.5px' }}>
-                      PROMO
-                    </span>
-                  )}
-                </div>
-                <span style={{ display: 'block', fontSize: '0.78rem', color: '#6e6357', marginTop: '2px' }}>
-                  {activeProduct.stock > 0 ? `Stock disponible: ${activeProduct.stock} unidades` : 'Sin stock disponible'}
-                </span>
-              </div>
-
-              <div className="product-detail-buttons-container" style={{ display: 'flex', gap: '12px' }}>
-                <Button
-                  variant="secondary"
-                  onClick={() => onToggleFavorite(activeProduct.id)}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '16px',
-                    borderColor: 'rgba(197, 168, 128, 0.5)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                    color: '#0f0c0b'
-                  }}
-                >
-                  <Heart 
-                    size={20} 
-                    color={isFavorite ? 'var(--color-terracota-suave, #9e6252)' : '#0f0c0b'} 
-                    fill={isFavorite ? 'var(--color-terracota-suave, #9e6252)' : 'none'} 
-                  />
-                </Button>
-                
-                <Button
-                  variant="primary"
-                  disabled={activeProduct.stock === 0}
-                  onClick={() => {
-                    HapticsService.success();
-                    onAddToCart(activeProduct);
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '14px 28px',
-                    borderRadius: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    boxShadow: '0 8px 24px rgba(197, 168, 128, 0.4)'
-                  }}
-                >
-                  <ShoppingCart size={18} />
-                  <span>{activeProduct.stock > 0 ? 'Agregar al Altar / Carrito' : 'Sin Stock'}</span>
-                </Button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Sección: Recomendados en la base del modal */}
-        <div style={{
-          backgroundColor: 'rgba(235, 227, 212, 0.5)',
-          border: '1px solid rgba(197, 168, 128, 0.25)',
-          borderRadius: '20px',
-          padding: '24px',
-          marginTop: '28px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <Sparkles size={16} color="var(--color-dorado-mate, #c5a880)" />
-            <Typography variant="caption" style={{ color: '#0f0c0b', fontWeight: 700, fontSize: '0.85rem' }}>
-              Productos Relacionados para tu Alquimia
-            </Typography>
-          </div>
-
-          {loadingRecommended ? (
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', padding: '16px 0' }}>
-              <span style={{ fontSize: '0.85rem', color: '#6e6357' }}>Armonizando complementos...</span>
-            </div>
-          ) : recommended.length === 0 ? (
-            <div style={{ padding: '8px 0' }}>
-              <Typography variant="body-sm" style={{ color: '#6e6357' }}>Este producto es una obra única. Experimentalo en su esencia.</Typography>
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '16px'
-            }}>
-              {recommended.map((rec) => (
-                <div
-                  key={rec.id}
-                  onClick={() => setActiveProduct(rec)}
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                    border: '1px solid rgba(197, 168, 128, 0.3)',
-                    borderRadius: '16px',
-                    padding: '12px',
-                    display: 'flex',
-                    gap: '12px',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-dorado-mate, #c5a880)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(197, 168, 128, 0.3)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <img
-                    src={rec.imageUrl}
-                    alt={rec.name}
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      objectFit: 'cover',
-                      borderRadius: '10px'
-                    }}
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', overflow: 'hidden' }}>
-                    <Typography 
-                      variant="body-sm" 
-                      weight="medium" 
-                      style={{ 
-                        fontSize: '0.82rem',
-                        color: '#0f0c0b',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        marginBottom: '4px'
-                      }}
-                    >
-                      {rec.name}
-                    </Typography>
-                    <Typography variant="caption" style={{ color: '#a38053', fontWeight: 600, fontSize: '0.78rem' }}>
-                      ${rec.price.toLocaleString('es-AR')}
-                    </Typography>
-                  </div>
-                </div>
-              ))}
-            </div>
+            >
+              Últimas {product.stock} unidades
+            </span>
           )}
         </div>
 
-        {/* Botón de cierre inferior prominente en móvil */}
-        <div className="product-detail-mobile-close-footer">
+        {/* Categoría y Subcategoría */}
+        <div style={{ marginBottom: '8px' }}>
+          <span
+            style={{
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.12em',
+              color: '#c5a880',
+              fontWeight: 600,
+            }}
+          >
+            {product.category} {product.subcategory ? `— ${product.subcategory}` : ''}
+          </span>
+        </div>
+
+        {/* Título con tipografía serif */}
+        <Typography
+          variant="h2"
+          style={{
+            fontSize: '1.65rem',
+            color: '#FDFBF7',
+            fontFamily: 'var(--font-serif, serif)',
+            marginBottom: '12px',
+            lineHeight: 1.25,
+            fontWeight: 500,
+          }}
+        >
+          {product.name}
+        </Typography>
+
+        {/* Precio, Descuento y Stock */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            marginBottom: '16px',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '1.6rem',
+              color: '#c5a880',
+              fontWeight: 700,
+              fontFamily: 'var(--font-sans, sans-serif)',
+            }}
+          >
+            ${(product.promoPrice ?? product.price).toLocaleString('es-AR')}
+          </span>
+          {product.promoPrice && (
+            <span
+              style={{
+                fontSize: '1rem',
+                color: '#8a7d6b',
+                textDecoration: 'line-through',
+              }}
+            >
+              ${product.price.toLocaleString('es-AR')}
+            </span>
+          )}
+          {product.promoPrice && (
+            <span
+              style={{
+                fontSize: '0.7rem',
+                backgroundColor: 'rgba(197, 168, 128, 0.18)',
+                color: '#c5a880',
+                border: '1px solid rgba(197, 168, 128, 0.4)',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              PROMO
+            </span>
+          )}
+          <span
+            style={{
+              fontSize: '0.78rem',
+              color: product.stock > 0 ? '#9CA3AF' : '#EF4444',
+              marginLeft: 'auto',
+            }}
+          >
+            {product.stock > 0 ? `Stock: ${product.stock} disp.` : 'Sin stock disponible'}
+          </span>
+        </div>
+
+        {/* Descripción breve */}
+        {product.description && (
+          <p
+            style={{
+              fontSize: '0.9rem',
+              color: '#D5C8B4',
+              lineHeight: 1.6,
+              margin: '0 0 16px',
+            }}
+          >
+            {product.description}
+          </p>
+        )}
+
+        {/* Descripción poética/sensorial si existe */}
+        {product.sensoryDescription && (
+          <div
+            style={{
+              borderLeft: '3px solid #c5a880',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              backgroundColor: 'rgba(197, 168, 128, 0.08)',
+              borderRadius: '0 8px 8px 0',
+            }}
+          >
+            <p
+              style={{
+                fontSize: '0.85rem',
+                color: '#E5D9C4',
+                fontStyle: 'italic',
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              "{product.sensoryDescription}"
+            </p>
+          </div>
+        )}
+
+        {/* Notas de aroma e ingredientes botánicos */}
+        {(product.aroma || (product.ingredients && product.ingredients.length > 0)) && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              alignItems: 'center',
+              marginBottom: '20px',
+            }}
+          >
+            {product.aroma && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontSize: '0.78rem',
+                  fontWeight: 500,
+                  padding: '5px 12px',
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(79, 94, 76, 0.25)',
+                  border: '1px solid rgba(79, 94, 76, 0.45)',
+                  color: '#C7D9C4',
+                }}
+              >
+                🌿 Aroma: {product.aroma}
+              </span>
+            )}
+            {product.ingredients?.map((ing) => (
+              <span
+                key={ing}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  padding: '4px 10px',
+                  borderRadius: '14px',
+                  backgroundColor: 'rgba(197, 168, 128, 0.12)',
+                  border: '1px solid rgba(197, 168, 128, 0.25)',
+                  color: '#E5D9C4',
+                }}
+              >
+                <Leaf size={12} color="#c5a880" />
+                {ing}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Fila de Acciones: Selector de cantidad, Favorito y Agregar al Carrito */}
+        <div
+          style={{
+            marginTop: 'auto',
+            paddingTop: '16px',
+            borderTop: '1px solid rgba(212, 175, 55, 0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              justifyContent: 'space-between',
+            }}
+          >
+            {/* Selector de Cantidad */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                padding: '4px',
+                gap: '8px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleDecrease}
+                disabled={quantity <= 1 || product.stock === 0}
+                aria-label="Disminuir cantidad"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: quantity <= 1 ? 'rgba(255, 255, 255, 0.25)' : '#FDFBF7',
+                  cursor: quantity <= 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (quantity > 1) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Minus size={16} />
+              </button>
+
+              <span
+                style={{
+                  fontSize: '0.95rem',
+                  fontWeight: 600,
+                  color: '#FDFBF7',
+                  minWidth: '24px',
+                  textAlign: 'center',
+                }}
+              >
+                {quantity}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleIncrease}
+                disabled={quantity >= product.stock || product.stock === 0}
+                aria-label="Aumentar cantidad"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: quantity >= product.stock ? 'rgba(255, 255, 255, 0.25)' : '#FDFBF7',
+                  cursor: quantity >= product.stock ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (quantity < product.stock) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+
+            {/* Botón de Favorito */}
+            <Button
+              variant="secondary"
+              onClick={() => onToggleFavorite(product.id)}
+              aria-label={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+              style={{
+                width: '44px',
+                height: '44px',
+                padding: 0,
+                borderRadius: '12px',
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                borderColor: isFavorite ? 'rgba(158, 98, 82, 0.8)' : 'rgba(255, 255, 255, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Heart
+                size={20}
+                color={isFavorite ? 'var(--color-terracota-suave, #9E6252)' : '#FDFBF7'}
+                fill={isFavorite ? 'var(--color-terracota-suave, #9E6252)' : 'none'}
+              />
+            </Button>
+          </div>
+
+          {/* Botón Principal: Agregar al Carrito */}
           <Button
-            variant="secondary"
-            onClick={onClose}
+            variant="primary"
+            disabled={product.stock === 0}
+            onClick={handleAdd}
             style={{
               width: '100%',
-              padding: '14px',
-              borderRadius: '16px',
-              backgroundColor: 'rgba(15, 12, 11, 0.08)',
-              borderColor: 'var(--color-dorado-mate, #c5a880)',
-              color: '#0f0c0b',
-              fontWeight: 700,
-              fontSize: '0.95rem',
+              padding: '14px 20px',
+              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              marginTop: '20px'
+              gap: '10px',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+              boxShadow: '0 8px 24px rgba(197, 168, 128, 0.25)',
             }}
           >
-            <X size={18} />
-            <span>✕ Cerrar Vista</span>
+            <ShoppingCart size={18} />
+            <span>
+              {product.stock > 0
+                ? `Agregar al Carrito (${quantity})`
+                : 'Sin Stock'}
+            </span>
           </Button>
         </div>
-
       </div>
 
-      {/* Estilos locales para animaciones y responsividad */}
       <style>{`
         @keyframes backdropFadeIn {
           from { opacity: 0; }
@@ -521,77 +551,48 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
         @keyframes modalSlideUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(20px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
         
-        .product-detail-mobile-close-footer {
-          display: none;
+        .product-detail-modal::-webkit-scrollbar {
+          width: 6px;
         }
-        .product-detail-image-container {
-          height: 300px;
+        .product-detail-modal::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.02);
+          border-radius: 8px;
         }
-        .product-detail-purchase-row {
-          flex-direction: column;
-          align-items: flex-start;
-          width: 100%;
+        .product-detail-modal::-webkit-scrollbar-thumb {
+          background: rgba(212, 175, 55, 0.25);
+          border-radius: 8px;
         }
-        .product-detail-buttons-container {
-          width: 100%;
+        .product-detail-modal::-webkit-scrollbar-thumb:hover {
+          background: rgba(212, 175, 55, 0.45);
         }
+
         @media (max-width: 767px) {
           .product-detail-backdrop {
-            padding: 16px !important;
+            padding: 12px !important;
           }
           .product-detail-modal {
-            width: calc(100vw - 32px) !important;
-            max-width: 100% !important;
-            max-height: 82vh !important;
-            padding: 16px !important;
-            overflow-y: auto !important;
-            border-radius: 20px !important;
+            padding: 18px !important;
+            max-height: 88dvh !important;
+            border-radius: 14px !important;
+          }
+          .product-detail-image-wrapper {
+            height: 180px !important;
+            max-height: 180px !important;
+            margin-bottom: 14px !important;
           }
           .product-detail-close-btn {
-            position: sticky !important;
             top: 12px !important;
             right: 12px !important;
-            align-self: flex-end !important;
-            z-index: 1000 !important;
             width: 36px !important;
             height: 36px !important;
-            font-size: 1rem !important;
-            margin-bottom: -36px !important;
-          }
-          .product-detail-image-container {
-            height: auto !important;
-            max-height: 180px !important;
-            margin-top: 4px !important;
-          }
-          .product-detail-img {
-            max-height: 180px !important;
-            object-fit: contain !important;
-          }
-          .product-detail-mobile-close-footer {
-            display: block !important;
-          }
-        }
-        @media (min-width: 768px) {
-          .product-detail-image-container {
-            height: 100% !important;
-            min-height: 400px;
-          }
-        }
-        @media (min-width: 640px) {
-          .product-detail-purchase-row {
-            flex-direction: row !important;
-            align-items: center !important;
-          }
-          .product-detail-buttons-container {
-            width: auto !important;
           }
         }
       `}</style>

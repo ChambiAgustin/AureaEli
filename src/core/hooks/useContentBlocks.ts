@@ -5,8 +5,8 @@ import type { ContentBlock } from '../api/IRepository';
 
 /**
  * Hook que carga los content blocks desde Supabase y escucha cambios en tiempo real.
- * Uso: const { text } = useContentBlocks();
- *      text('home.hero.title', 'Fallback')
+ * Uso: const { getBlock } = useContentBlocks();
+ *      getBlock('home.hero.slogan', 'Fallback...')
  */
 export function useContentBlocks() {
   const [blocks, setBlocks] = useState<Record<string, string>>({});
@@ -17,7 +17,7 @@ export function useContentBlocks() {
       const data = await apiRepository.getContentBlocks();
       const map: Record<string, string> = {};
       data.forEach((b: ContentBlock) => {
-        map[b.key] = b.value.text ?? '';
+        map[b.key] = b.value?.text ?? '';
       });
       setBlocks(map);
     } catch (err) {
@@ -35,23 +35,40 @@ export function useContentBlocks() {
       .channel('content-blocks-client')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'content_blocks' },
+        { event: '*', schema: 'public', table: 'content_blocks' },
         (payload) => {
-          const updated = payload.new as { key: string; value: { text: string } };
-          setBlocks(prev => ({ ...prev, [updated.key]: updated.value.text ?? '' }));
+          if (payload.new && 'key' in payload.new) {
+            const updated = payload.new as { key: string; value: { text: string } };
+            setBlocks(prev => ({ ...prev, [updated.key]: updated.value?.text ?? '' }));
+          } else {
+            load();
+          }
         }
       )
       .subscribe();
 
-    return () => { channel.unsubscribe(); supabase.removeChannel(channel); };
+    return () => {
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+    };
   }, [load]);
 
   /**
-   * Obtiene el texto de un bloque por key.
-   * Si no existe o aún está cargando, devuelve el fallback.
+   * Obtiene el contenido de la clave si existe en el estado de blocks (y no está vacío),
+   * o defaultText si no existe o está vacío.
    */
-  const text = (key: string, fallback: string = ''): string =>
-    blocks[key] ?? fallback;
+  const getBlock = useCallback((key: string, defaultText: string = ''): string => {
+    const val = blocks[key];
+    return val && val.trim() !== '' ? val : defaultText;
+  }, [blocks]);
 
-  return { text, loading, blocks };
+  /**
+   * Obtiene el texto de un bloque por key (compatibilidad hacia atrás).
+   */
+  const text = useCallback((key: string, fallback: string = ''): string => {
+    return getBlock(key, fallback);
+  }, [getBlock]);
+
+  return { text, getBlock, loading, blocks };
 }
+

@@ -11,7 +11,7 @@ import type {
 
 // ─── Mappers: snake_case (BD) ↔ camelCase (app) ───────────────────────────
 
-function toProduct(row: Record<string, unknown>): Product {
+export function toProduct(row: Record<string, unknown>): Product {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -33,7 +33,7 @@ function toProduct(row: Record<string, unknown>): Product {
   };
 }
 
-function fromProduct(p: Product): Record<string, unknown> {
+export function fromProduct(p: Product): Record<string, unknown> {
   return {
     ...(p.id && !p.id.startsWith('new-') ? { id: p.id } : {}),
     name: p.name,
@@ -55,7 +55,7 @@ function fromProduct(p: Product): Record<string, unknown> {
   };
 }
 
-function toCategory(row: Record<string, unknown>): Category {
+export function toCategory(row: Record<string, unknown>): Category {
   return {
     id: row.id as string,
     name: row.name as string,
@@ -65,7 +65,7 @@ function toCategory(row: Record<string, unknown>): Category {
   };
 }
 
-function fromCategory(c: Category): Record<string, unknown> {
+export function fromCategory(c: Category): Record<string, unknown> {
   return {
     ...(c.id ? { id: c.id } : {}),
     name: c.name,
@@ -75,7 +75,7 @@ function fromCategory(c: Category): Record<string, unknown> {
   };
 }
 
-function toContentBlock(row: Record<string, unknown>): ContentBlock {
+export function toContentBlock(row: Record<string, unknown>): ContentBlock {
   return {
     key: row.key as string,
     label: row.label as string,
@@ -84,7 +84,7 @@ function toContentBlock(row: Record<string, unknown>): ContentBlock {
   };
 }
 
-function toProfile(row: Record<string, unknown>): UserProfile {
+export function toProfile(row: Record<string, unknown>): UserProfile {
   return {
     id: row.id as string,
     name: (row.name as string) ?? '',
@@ -97,33 +97,52 @@ function toProfile(row: Record<string, unknown>): UserProfile {
   };
 }
 
-function mapOrder(dbOrder: Record<string, any>): Order {
+export function mapOrder(dbOrder: Record<string, any>): Order {
   return {
     id: dbOrder.id as string,
-    userProfile: dbOrder.user_profile as UserProfile,
-    items: dbOrder.items as Order['items'],
-    status: dbOrder.status as Order['status'],
-    total: Number(dbOrder.total),
-    paymentMethod: dbOrder.payment_method as Order['paymentMethod'],
+    userProfile: (dbOrder.user_profile as UserProfile) || {
+      id: dbOrder.user_id || 'guest',
+      name: 'Cliente Aurea',
+      email: '',
+      stressLevel: 'medium',
+      aromaPreferences: [],
+      skinType: 'normal',
+      completedRituals: [],
+      favorites: [],
+    },
+    items: (dbOrder.items as Order['items']) ?? [],
+    status: (dbOrder.status as Order['status']) ?? 'pending',
+    total: Number(dbOrder.total ?? 0),
+    paymentMethod: (dbOrder.payment_method as Order['paymentMethod']) ?? 'mercadopago',
     address: (dbOrder.address as string) ?? '',
-    createdAt: dbOrder.created_at as string,
-    trackingNumber: dbOrder.tracking_number as string | undefined,
+    createdAt: (dbOrder.created_at as string) ?? new Date().toISOString(),
+    trackingNumber: (dbOrder.tracking_number as string) || undefined,
     customerPhone: (dbOrder.customer_phone as string) || (dbOrder.user_profile as any)?.phone || undefined,
+    mercadopagoPreferenceId: (dbOrder.mercadopago_preference_id as string) || undefined,
+    paymentStatus: (dbOrder.payment_status as Order['paymentStatus']) || 'pending',
   };
 }
 
-function mapRitual(dbRitual: Record<string, any>): Ritual {
+export function mapRitual(dbRitual: Record<string, any>): Ritual {
   let audioUrl = (dbRitual.audio_url as string) ?? '';
 
   if (!audioUrl || audioUrl.toLowerCase().includes('soundhelix')) {
     const id = ((dbRitual.id as string) ?? '').toLowerCase();
     const slug = ((dbRitual.slug as string) ?? '').toLowerCase();
+    const title = ((dbRitual.title as string) ?? '').toLowerCase();
 
-    if (id.includes('calma') || slug.includes('calma')) {
+    if (id.includes('calma') || slug.includes('calma') || title.includes('calma')) {
       audioUrl = '/audio/calma-mindfulness.mp3';
-    } else if (id.includes('florecimiento') || slug.includes('florecimiento')) {
+    } else if (id.includes('florecimiento') || slug.includes('florecimiento') || title.includes('florecimiento')) {
       audioUrl = '/audio/florecimiento-meditacion.mp3';
-    } else if (id.includes('desconexion') || slug.includes('desconexion')) {
+    } else if (
+      id.includes('desconexion') ||
+      slug.includes('desconexion') ||
+      id.includes('desconex') ||
+      slug.includes('desconex') ||
+      title.includes('desconexion') ||
+      title.includes('desconex')
+    ) {
       audioUrl = '/audio/desconexion-weightless.mp3';
     } else {
       audioUrl = '/audio/calma-mindfulness.mp3';
@@ -268,18 +287,28 @@ export class SupabaseRepository implements IRepository {
 
   async updateContentBlock(
     key: string,
-    value: ContentBlock['value']
+    value: ContentBlock['value'],
+    label?: string
   ): Promise<ContentBlock> {
+    const payload: Record<string, unknown> = {
+      key,
+      value,
+      updated_at: new Date().toISOString(),
+    };
+    if (label) {
+      payload.label = label;
+    }
+
     const { data, error } = await supabase
       .from('content_blocks')
-      .update({ value, updated_at: new Date().toISOString() })
-      .eq('key', key)
+      .upsert(payload, { onConflict: 'key' })
       .select()
       .single();
 
     if (error) throw new Error(`updateContentBlock: ${error.message}`);
     return toContentBlock(data);
   }
+
 
   // ── RITUALES ─────────────────────────────────────────────────────────────
 
@@ -391,34 +420,29 @@ export class SupabaseRepository implements IRepository {
     const trackingNumber = `AR-${Math.floor(100000000 + Math.random() * 900000000)}`;
     const { data: { user } } = await supabase.auth.getUser();
 
+    const insertPayload: Record<string, any> = {
+      user_id: user?.id ?? null, // null = compra como invitada/o (checkout no exige login)
+      user_profile: orderData.userProfile,
+      items: orderData.items,
+      total: orderData.total,
+      payment_method: orderData.paymentMethod,
+      address: orderData.address,
+      status: 'pending',
+      tracking_number: trackingNumber,
+      customer_phone: orderData.customerPhone || (orderData.userProfile as any)?.phone || null,
+      mercadopago_preference_id: orderData.mercadopagoPreferenceId || null,
+      payment_status: orderData.paymentStatus || 'pending',
+    };
+
     const { data, error } = await supabase
       .from('orders')
-      .insert({
-        user_id: user?.id ?? null, // null = compra como invitada/o (checkout no exige login)
-        user_profile: orderData.userProfile,
-        items: orderData.items,
-        total: orderData.total,
-        payment_method: orderData.paymentMethod,
-        address: orderData.address,
-        status: 'pending',
-        tracking_number: trackingNumber,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
     if (error) throw new Error(`createOrder: ${error.message}`);
 
-    return {
-      id: data.id as string,
-      userProfile: orderData.userProfile,
-      items: orderData.items,
-      status: 'pending',
-      total: orderData.total,
-      paymentMethod: orderData.paymentMethod,
-      address: orderData.address,
-      createdAt: data.created_at as string,
-      trackingNumber,
-    };
+    return mapOrder(data);
   }
 
   async getOrders(): Promise<Order[]> {
@@ -432,15 +456,41 @@ export class SupabaseRepository implements IRepository {
     return (data ?? []).map(mapOrder);
   }
 
+  async getOrderById(orderId: string): Promise<Order | null> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`getOrderById: ${error.message}`);
+      return null;
+    }
+
+    return data ? mapOrder(data) : null;
+  }
+
   async updateOrderStatus(orderId: string, status: Order['status']): Promise<Order> {
-    const { data, error } = await supabase.from('orders').update({ status }).eq('id', orderId).select('*').single();
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId)
+      .select('*')
+      .single();
     if (error) throw error;
     return mapOrder(data);
   }
 
   async updateOrderTracking(orderId: string, trackingNumber: string): Promise<Order> {
-    const { data, error } = await supabase.from('orders').update({ tracking_number: trackingNumber }).eq('id', orderId).select('*').single();
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ tracking_number: trackingNumber })
+      .eq('id', orderId)
+      .select('*')
+      .single();
     if (error) throw error;
     return mapOrder(data);
   }
 }
+

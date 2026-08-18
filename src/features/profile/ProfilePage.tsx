@@ -20,26 +20,44 @@ import Card from '../../shared/components/Card';
 import { apiRepository } from '../../core/api';
 import type { Product, UserProfile, Order } from '../../core/api';
 import { supabase } from '../../core/supabase/client';
+import { useAuth } from '../../core/context/AuthContext';
+import { useFavorites } from '../../core/context/FavoritesContext';
+import { useCart } from '../../core/context/CartContext';
+import { useToast } from '../../core/context/ToastContext';
+import AuthPage from '../auth/AuthPage';
 
 interface ProfilePageProps {
-  userProfile: UserProfile | null;
-  onUpdateProfile: (updatedProfile: UserProfile) => void;
-  onAddToCart: (product: Product) => void;
-  favorites: string[];
-  onToggleFavorite: (productId: string) => void;
-  triggerToast: (msg: string) => void;
-  orders: Order[];
+  userProfile?: UserProfile | null;
+  onUpdateProfile?: (updatedProfile: UserProfile) => void;
+  onAddToCart?: (product: Product) => void;
+  favorites?: string[];
+  onToggleFavorite?: (productId: string) => void;
+  triggerToast?: (msg: string) => void;
+  orders?: Order[];
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
-  userProfile,
-  onUpdateProfile,
-  onAddToCart,
-  favorites,
-  onToggleFavorite,
-  triggerToast,
-  orders,
+  userProfile: propUserProfile,
+  onUpdateProfile: propOnUpdateProfile,
+  onAddToCart: propOnAddToCart,
+  favorites: propFavorites,
+  onToggleFavorite: propOnToggleFavorite,
+  triggerToast: propTriggerToast,
+  orders: propOrders = [],
 }) => {
+  const { userProfile: contextUserProfile, updateProfile: contextUpdateProfile, refreshProfile } = useAuth();
+  const { favorites: contextFavorites, toggleFavorite: contextToggleFavorite } = useFavorites();
+  const { addItem } = useCart();
+  const { triggerToast: contextTriggerToast } = useToast();
+
+  const userProfile = propUserProfile !== undefined ? propUserProfile : contextUserProfile;
+  const onUpdateProfile = propOnUpdateProfile || ((p: UserProfile) => contextUpdateProfile(p));
+  const onAddToCart = propOnAddToCart || ((p: Product) => addItem(p));
+  const favorites = propFavorites || contextFavorites;
+  const onToggleFavorite = propOnToggleFavorite || contextToggleFavorite;
+  const triggerToast = propTriggerToast || contextTriggerToast;
+
+  const [internalOrders, setInternalOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [editingName, setEditingName] = useState<string>(userProfile?.name || '');
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -47,6 +65,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [selectedAromas, setSelectedAromas] = useState<string[]>(userProfile?.aromaPreferences || []);
 
   const allAromas = ['Lavanda', 'Sándalo', 'Eucalipto', 'Menta', 'Rosas', 'Salvia', 'Copal', 'Jazmín'];
+
+  // Cargar órdenes cuando se renderiza directamente la ruta /perfil
+  useEffect(() => {
+    if (userProfile && propOrders.length === 0) {
+      apiRepository
+        .getOrders()
+        .then(setInternalOrders)
+        .catch((err) => console.error('Error al cargar órdenes en ProfilePage:', err));
+    }
+  }, [userProfile, propOrders.length]);
+
+  const orders = propOrders.length > 0 ? propOrders : internalOrders;
 
   // Load all products to map favorite IDs
   useEffect(() => {
@@ -61,7 +91,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
     fetchProducts();
   }, []);
 
-  if (!userProfile) return null;
+  if (!userProfile) {
+    return (
+      <AuthPage
+        onLoginSuccess={() => {
+          refreshProfile();
+        }}
+      />
+    );
+  }
 
   // Filter favorite products from all products
   const favoriteProducts = products.filter(p => favorites.includes(p.id));

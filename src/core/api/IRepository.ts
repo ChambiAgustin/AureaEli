@@ -93,7 +93,7 @@ export interface IRepository {
 
   // Content blocks (textos editables)
   getContentBlocks(): Promise<ContentBlock[]>;
-  updateContentBlock(key: string, value: ContentBlock['value']): Promise<ContentBlock>;
+  updateContentBlock(key: string, value: ContentBlock['value'], label?: string): Promise<ContentBlock>;
 
   // Rituales
   getRituals(): Promise<Ritual[]>;
@@ -105,7 +105,9 @@ export interface IRepository {
   updateUserProfile(profile: UserProfile): Promise<UserProfile>;
   createOrder(order: Omit<Order, 'id' | 'createdAt' | 'status' | 'trackingNumber'>): Promise<Order>;
   getOrders(): Promise<Order[]>;
+  getOrderById(orderId: string): Promise<Order | null>;
   updateOrderStatus(orderId: string, status: Order['status']): Promise<Order>;
   updateOrderTracking(orderId: string, trackingNumber: string): Promise<Order>;
 }
+
 
