@@ -24,19 +24,19 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   onToggleFavorite: propOnToggleFavorite,
 }) => {
   useSEO({
-    title: `${product.name} | Aurea Elizabeth`,
+    title: product?.name ? `${product.name} | Aurea Elizabeth` : 'Alquimia | Aurea Elizabeth',
     description:
-      product.description ||
-      product.sensoryDescription ||
+      product?.description ||
+      product?.sensoryDescription ||
       'Elemento de alquimia botánica seleccionado con amor para intencionar tus días.',
-    image: product.imageUrl,
+    image: product?.imageUrl,
     type: 'product',
   });
 
   const { addItem } = useCart();
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
-  const isFavorite = propIsFavorite !== undefined ? propIsFavorite : checkIsFavorite(product.id);
+  const isFavorite = propIsFavorite !== undefined ? propIsFavorite : (product ? checkIsFavorite(product.id) : false);
   const onToggleFavorite = propOnToggleFavorite || toggleFavorite;
   const onAddToCart = propOnAddToCart || ((p: Product) => addItem(p));
 
@@ -58,6 +58,8 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
       document.body.style.overflow = 'unset';
     };
   }, [onClose]);
+
+  if (!product) return null;
 
   // Manejo de incremento y decremento de cantidad
   const handleIncrease = () => {

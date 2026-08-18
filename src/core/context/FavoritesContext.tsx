@@ -22,11 +22,13 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try {
       const saved = localStorage.getItem(FAVS_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed : [];
       }
       const legacySaved = localStorage.getItem(LEGACY_FAVS_STORAGE_KEY);
       if (legacySaved) {
-        return JSON.parse(legacySaved);
+        const parsed = JSON.parse(legacySaved);
+        return Array.isArray(parsed) ? parsed : [];
       }
       return [];
     } catch (e) {
@@ -37,14 +39,15 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Sincronizar favoritos locales con el perfil autenticado
   useEffect(() => {
-    if (userProfile && userProfile.favorites) {
+    if (userProfile && Array.isArray(userProfile.favorites)) {
       setFavorites((prev) => {
         // Unir favoritos locales con los de base de datos sin duplicados
-        const merged = Array.from(new Set([...prev, ...userProfile.favorites]));
+        const currentFavs = Array.isArray(prev) ? prev : [];
+        const merged = Array.from(new Set([...currentFavs, ...userProfile.favorites]));
         return merged;
       });
     }
-  }, [userProfile?.id]);
+  }, [userProfile?.id, userProfile?.favorites]);
 
   // Persistir en localStorage
   useEffect(() => {

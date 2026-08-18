@@ -27,58 +27,62 @@ export function useSEO({
   type = 'website',
 }: SEOProps = {}): void {
   useEffect(() => {
-    // 1. Título de la página
-    const formattedTitle = title
-      ? title.includes('Aurea Elizabeth')
-        ? title
-        : `${title} | Aurea Elizabeth`
-      : DEFAULT_TITLE;
+    try {
+      // 1. Título de la página
+      const formattedTitle = title
+        ? title.includes('Aurea Elizabeth')
+          ? title
+          : `${title} | Aurea Elizabeth`
+        : DEFAULT_TITLE;
 
-    document.title = formattedTitle;
+      document.title = formattedTitle;
 
-    // Función auxiliar para actualizar o crear tags <meta>
-    const setMetaTag = (
-      attribute: 'name' | 'property',
-      attrValue: string,
-      content: string
-    ) => {
-      let element = document.querySelector<HTMLMetaElement>(
-        `meta[${attribute}="${attrValue}"]`
-      );
-      if (!element) {
-        element = document.createElement('meta');
-        element.setAttribute(attribute, attrValue);
-        document.head.appendChild(element);
+      // Función auxiliar para actualizar o crear tags <meta>
+      const setMetaTag = (
+        attribute: 'name' | 'property',
+        attrValue: string,
+        content: string
+      ) => {
+        let element = document.querySelector<HTMLMetaElement>(
+          `meta[${attribute}="${attrValue}"]`
+        );
+        if (!element) {
+          element = document.createElement('meta');
+          element.setAttribute(attribute, attrValue);
+          document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
+      };
+
+      // URL absoluta
+      const resolvedUrl =
+        url || (typeof window !== 'undefined' ? window.location.href : 'https://aureaelizabeth.com');
+
+      // Imagen absoluta
+      let resolvedImage = image;
+      if (typeof window !== 'undefined' && image && !image.startsWith('http')) {
+        const origin = window.location.origin;
+        resolvedImage = `${origin}${image.startsWith('/') ? '' : '/'}${image}`;
       }
-      element.setAttribute('content', content);
-    };
 
-    // URL absoluta
-    const resolvedUrl =
-      url || (typeof window !== 'undefined' ? window.location.href : 'https://aureaelizabeth.com');
+      // 2. Meta estándar
+      setMetaTag('name', 'description', description);
 
-    // Imagen absoluta
-    let resolvedImage = image;
-    if (typeof window !== 'undefined' && image && !image.startsWith('http')) {
-      const origin = window.location.origin;
-      resolvedImage = `${origin}${image.startsWith('/') ? '' : '/'}${image}`;
+      // 3. Open Graph
+      setMetaTag('property', 'og:title', formattedTitle);
+      setMetaTag('property', 'og:description', description);
+      setMetaTag('property', 'og:image', resolvedImage);
+      setMetaTag('property', 'og:url', resolvedUrl);
+      setMetaTag('property', 'og:type', type);
+
+      // 4. Twitter Cards
+      setMetaTag('name', 'twitter:card', twitterCard);
+      setMetaTag('name', 'twitter:title', formattedTitle);
+      setMetaTag('name', 'twitter:description', description);
+      setMetaTag('name', 'twitter:image', resolvedImage);
+    } catch (err) {
+      console.warn('[useSEO] Error al manipular el DOM para meta tags SEO:', err);
     }
-
-    // 2. Meta estándar
-    setMetaTag('name', 'description', description);
-
-    // 3. Open Graph
-    setMetaTag('property', 'og:title', formattedTitle);
-    setMetaTag('property', 'og:description', description);
-    setMetaTag('property', 'og:image', resolvedImage);
-    setMetaTag('property', 'og:url', resolvedUrl);
-    setMetaTag('property', 'og:type', type);
-
-    // 4. Twitter Cards
-    setMetaTag('name', 'twitter:card', twitterCard);
-    setMetaTag('name', 'twitter:title', formattedTitle);
-    setMetaTag('name', 'twitter:description', description);
-    setMetaTag('name', 'twitter:image', resolvedImage);
   }, [title, description, image, url, twitterCard, type]);
 }
 

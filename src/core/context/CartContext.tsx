@@ -38,15 +38,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        const validItems = Array.isArray(parsed)
+          ? parsed.filter((item: any) => Boolean(item && item.product && typeof item.quantity === 'number'))
+          : [];
+        return validItems;
       }
       // Migración desde versión v1 si existe
       const legacySaved = localStorage.getItem(LEGACY_CART_STORAGE_KEY);
       if (legacySaved) {
         const parsed = JSON.parse(legacySaved);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
+        const validItems = Array.isArray(parsed)
+          ? parsed.filter((item: any) => Boolean(item && item.product && typeof item.quantity === 'number'))
+          : [];
+        return validItems;
       }
       return [];
     } catch (e) {
@@ -74,7 +79,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (product: Product, quantity: number = 1, variant?: string) => {
       setItems((prevItems) => {
         const existingIndex = prevItems.findIndex(
-          (item) => item.product.id === product.id && item.variant === variant
+          (item) => item.product?.id === product?.id && item.variant === variant
         );
 
         if (existingIndex > -1) {
@@ -100,7 +105,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setItems((prevItems) => {
         let updated = [...prevItems];
         products.forEach((product) => {
-          const existingIndex = updated.findIndex((item) => item.product.id === product.id);
+          const existingIndex = updated.findIndex((item) => item.product?.id === product?.id);
           if (existingIndex > -1) {
             updated[existingIndex] = {
               ...updated[existingIndex],
@@ -119,7 +124,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removeItem = useCallback(
     (productId: string) => {
-      setItems((prevItems) => prevItems.filter((item) => item.product.id !== productId));
+      setItems((prevItems) => prevItems.filter((item) => item.product?.id !== productId));
       showToast('Elemento removido del altar.', 'info');
     },
     [showToast]
@@ -128,7 +133,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateQuantity = useCallback((productId: string, delta: number) => {
     setItems((prevItems) =>
       prevItems.map((item) => {
-        if (item.product.id === productId) {
+        if (item.product?.id === productId) {
           const newQty = item.quantity + delta;
           return { ...item, quantity: Math.max(1, newQty) };
         }
@@ -145,29 +150,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems((prevItems) => {
       return prevItems
         .map((item) => {
-          const match = freshProducts.find((p) => p.id === item.product.id);
+          const match = freshProducts.find((p) => p.id === item.product?.id);
           return match ? { ...item, product: match } : item;
         })
-        .filter((item) => freshProducts.some((p) => p.id === item.product.id));
+        .filter((item) => item.product && freshProducts.some((p) => p.id === item.product.id));
     });
   }, []);
 
   // Cálculos reactivos memorizados
   const cartCount = useMemo(() => {
-    return items.reduce((acc, curr) => acc + curr.quantity, 0);
+    return items.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
   }, [items]);
 
   const cartTotal = useMemo(() => {
     return items.reduce((acc, curr) => {
-      const price = curr.product.promoPrice ?? curr.product.price;
+      const price = curr.product?.promoPrice ?? curr.product?.price ?? 0;
       return acc + price * curr.quantity;
     }, 0);
   }, [items]);
 
   const cartSavings = useMemo(() => {
     return items.reduce((acc, curr) => {
-      if (curr.product.promoPrice && curr.product.promoPrice < curr.product.price) {
-        return acc + (curr.product.price - curr.product.promoPrice) * curr.quantity;
+      const price = curr.product?.promoPrice;
+      const regPrice = curr.product?.price ?? 0;
+      if (price && price < regPrice) {
+        return acc + (regPrice - price) * curr.quantity;
       }
       return acc;
     }, 0);

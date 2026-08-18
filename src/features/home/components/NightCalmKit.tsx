@@ -5,7 +5,7 @@ import Button from '../../../shared/components/Button';
 import { Sparkles, Clock } from 'lucide-react';
 
 interface NightCalmKitProps {
-  products: Product[];
+  products?: Product[];
   onAddToCart: (product: Product) => void;
   addToRevealRefs?: (el: HTMLDivElement | null) => void;
 }
@@ -32,18 +32,21 @@ const kitSteps = [
 ];
 
 export const NightCalmKit: React.FC<NightCalmKitProps> = ({
-  products,
+  products = [],
   onAddToCart,
   addToRevealRefs
 }) => {
   const [activeKitStep, setActiveKitStep] = useState<number>(0);
 
-  const kitProducts = products.slice(0, 3);
-  const kitTotal = kitProducts.reduce((acc, p) => acc + (p.promoPrice ?? p.price), 0);
+  const safeProducts = Array.isArray(products) ? products : [];
+  const kitProducts = safeProducts.slice(0, 3);
+  const kitTotal = kitProducts.reduce((acc, p) => acc + ((p?.promoPrice ?? p?.price) ?? 0), 0);
 
   const handleAddKitToCart = () => {
     if (kitProducts.length === 0) return;
-    kitProducts.forEach(p => onAddToCart(p));
+    kitProducts.forEach(p => {
+      if (p) onAddToCart(p);
+    });
     alert('¡Fantástico! Agregamos los productos del "Kit de Calma Nocturna" a tu altar de compras.');
   };
 

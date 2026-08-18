@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiRepository } from '../api';
-import { supabase } from '../supabase/client';
+import { supabase, isSupabaseConfigured } from '../supabase/client';
 import type { Product } from '../api/IRepository';
 
 /**
@@ -29,16 +29,34 @@ export function useProducts(filter?: (p: Product) => boolean) {
   useEffect(() => {
     load();
 
-    const channel = supabase
-      .channel('products-client')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'products' },
-        () => load()
-      )
-      .subscribe();
+    if (!isSupabaseConfigured) {
+      return;
+    }
 
-    return () => { channel.unsubscribe(); supabase.removeChannel(channel); };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel('products-client')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'products' },
+          () => load()
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Realtime channel error in useProducts:', err);
+    }
+
+    return () => {
+      try {
+        if (channel) {
+          channel.unsubscribe();
+          supabase.removeChannel(channel);
+        }
+      } catch (err) {
+        console.warn('Error cleaning up products channel:', err);
+      }
+    };
   }, [load]);
 
   return { products, loading, error, reload: load };

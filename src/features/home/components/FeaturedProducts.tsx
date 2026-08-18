@@ -8,7 +8,7 @@ import { ShoppingBag, Heart, Sparkles, Flame, Check, Leaf } from 'lucide-react';
 import { useContentBlocks } from '../../../core/hooks/useContentBlocks';
 
 interface FeaturedProductsProps {
-  products: Product[];
+  products?: Product[];
   loading?: boolean;
   onAddToCart: (product: Product) => void;
   onNavigate: (tab: 'home' | 'catalog' | 'rituals' | 'profile' | 'admin', category?: string) => void;
@@ -16,7 +16,7 @@ interface FeaturedProductsProps {
 }
 
 export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
-  products,
+  products = [],
   loading = false,
   onAddToCart,
   onNavigate,
@@ -41,6 +41,8 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
     HapticsService.medium();
     toggleFavorite(productId);
   };
+
+  const safeProducts = Array.isArray(products) ? products : [];
 
   return (
     <section className="reveal-on-scroll" ref={addToRevealRefs} style={{ marginBottom: '80px' }}>
@@ -76,9 +78,9 @@ export const FeaturedProducts: React.FC<FeaturedProductsProps> = ({
               />
             ))}
           </div>
-        ) : (
+        ) : safeProducts.length === 0 ? null : (
           <div className="grid-3" style={{ gap: '28px' }}>
-            {products.map((product) => {
+            {safeProducts.map((product) => {
               const isFav = isFavorite(product.id);
               const isAdded = addedProductId === product.id;
               const hasDiscount = Boolean(product.promoPrice && product.price > product.promoPrice);

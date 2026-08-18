@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiRepository } from '../api';
-import { supabase } from '../supabase/client';
+import { supabase, isSupabaseConfigured } from '../supabase/client';
 import type { ContentBlock } from '../api/IRepository';
 
 /**
@@ -30,26 +30,41 @@ export function useContentBlocks() {
   useEffect(() => {
     load();
 
-    // Realtime: escucha cambios en content_blocks
-    const channel = supabase
-      .channel('content-blocks-client')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'content_blocks' },
-        (payload) => {
-          if (payload.new && 'key' in payload.new) {
-            const updated = payload.new as { key: string; value: { text: string } };
-            setBlocks(prev => ({ ...prev, [updated.key]: updated.value?.text ?? '' }));
-          } else {
-            load();
+    if (!isSupabaseConfigured) {
+      return;
+    }
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      // Realtime: escucha cambios en content_blocks
+      channel = supabase
+        .channel('content-blocks-client')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'content_blocks' },
+          (payload) => {
+            if (payload.new && 'key' in payload.new) {
+              const updated = payload.new as { key: string; value: { text: string } };
+              setBlocks(prev => ({ ...prev, [updated.key]: updated.value?.text ?? '' }));
+            } else {
+              load();
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch (err) {
+      console.warn('Realtime channel error in useContentBlocks:', err);
+    }
 
     return () => {
-      channel.unsubscribe();
-      supabase.removeChannel(channel);
+      try {
+        if (channel) {
+          channel.unsubscribe();
+          supabase.removeChannel(channel);
+        }
+      } catch (err) {
+        console.warn('Error cleaning up content blocks channel:', err);
+      }
     };
   }, [load]);
 

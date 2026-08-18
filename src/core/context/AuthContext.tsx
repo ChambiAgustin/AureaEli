@@ -110,15 +110,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (isMounted) {
-        loadUserProfile(initialSession);
-      }
-    });
+    supabase.auth
+      .getSession()
+      .then((res) => {
+        if (isMounted && res?.data?.session) {
+          loadUserProfile(res.data.session);
+        } else if (isMounted) {
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn('Auth session check skipped:', err);
+        if (isMounted) setIsLoading(false);
+      });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const authRes = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (isMounted) {
         await loadUserProfile(newSession);
       }
@@ -126,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+      authRes?.data?.subscription?.unsubscribe?.();
     };
   }, [loadUserProfile]);
 

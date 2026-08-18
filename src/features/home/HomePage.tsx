@@ -42,8 +42,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart: pro
     else if (tab === 'admin') navigate('/admin');
   };
 
-  const { products: allProducts, loading: loadingProducts } = useProducts();
-  const featuredProducts = allProducts.filter(p => p.isFeatured || p.isNew).slice(0, 8);
+  const { products: allProducts = [], loading: loadingProducts } = useProducts();
+  const featuredProducts = (allProducts || []).filter(p => p && (p.isFeatured || p.isNew)).slice(0, 8);
 
   const revealRefs = useRef<HTMLDivElement[]>([]);
 
@@ -69,7 +69,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onAddToCart: pro
       }
     );
 
-    revealRefs.current.forEach((el) => observer.observe(el));
+    revealRefs.current
+      .filter((el): el is HTMLDivElement => Boolean(el))
+      .forEach((el) => observer.observe(el));
 
     return () => {
       observer.disconnect();

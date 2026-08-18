@@ -5,7 +5,7 @@ import Button from '../../../shared/components/Button';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 
 interface TestimonialsSectionProps {
-  products: Product[];
+  products?: Product[];
   onAddToCart: (product: Product) => void;
   addToRevealRefs?: (el: HTMLDivElement | null) => void;
 }
@@ -32,14 +32,15 @@ const testimonialCopy = [
 ];
 
 export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
-  products,
+  products = [],
   onAddToCart,
   addToRevealRefs
 }) => {
   const [activeCarouselIndex, setActiveCarouselIndex] = useState<number>(0);
 
-  const featuredForCarousel = products.filter(p => p.isFeatured);
-  const bestSellers = (featuredForCarousel.length >= 3 ? featuredForCarousel : products).slice(0, 3);
+  const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
+  const featuredForCarousel = safeProducts.filter(p => p.isFeatured);
+  const bestSellers = (featuredForCarousel.length >= 3 ? featuredForCarousel : safeProducts).slice(0, 3);
   const activeBestSeller = bestSellers.length > 0 ? bestSellers[activeCarouselIndex % bestSellers.length] : null;
   const activeTestimonial = testimonialCopy[activeCarouselIndex % testimonialCopy.length];
 
