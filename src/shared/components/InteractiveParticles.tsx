@@ -106,7 +106,7 @@ export const InteractiveParticles: React.FC = () => {
       
       // Brillo orbital sutil
       c.shadowBlur = radius * 1.5;
-      c.shadowColor = 'var(--color-dorado-mate)';
+      c.shadowColor = 'rgba(176, 142, 98, 0.6)';
       
       c.beginPath();
       c.moveTo(0, -radius);
@@ -168,7 +168,7 @@ export const InteractiveParticles: React.FC = () => {
       // Núcleo de oro champagne
       c.beginPath();
       c.arc(0, 0, radius * 0.28, 0, Math.PI * 2);
-      c.fillStyle = 'var(--color-dorado-mate)';
+      c.fillStyle = '#B08E62';
       c.fill();
       
       c.restore();
