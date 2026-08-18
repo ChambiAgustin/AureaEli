@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { Sparkles, CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 
-export type ToastType = 'success' | 'error' | 'info' | 'gold';
+export type ToastType = 'success' | 'error' | 'info' | 'gold' | 'warning';
 
 export interface ToastItem {
   id: string;
@@ -12,7 +12,7 @@ export interface ToastItem {
 
 export interface ToastContextValue {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
-  triggerToast: (message: string) => void; // Compatibilidad hacia atrás
+  triggerToast: (message: string, type?: ToastType, duration?: number) => void; // Compatibilidad hacia atrás
   hideToast: (id?: string) => void;
 }
 
@@ -56,8 +56,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   const triggerToast = useCallback(
-    (message: string) => {
-      showToast(message, 'gold', 3500);
+    (message: string, type: ToastType = 'gold', duration: number = 3500) => {
+      showToast(message, type, duration);
     },
     [showToast]
   );
@@ -79,6 +79,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           iconColor: '#e07a68',
           accentColor: 'var(--color-terracota-suave, #9E6252)',
           boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(158, 98, 82, 0.2)',
+        };
+      case 'warning':
+        return {
+          background: 'rgba(45, 35, 20, 0.96)',
+          border: '1px solid rgba(212, 163, 89, 0.6)',
+          iconColor: '#e5b869',
+          accentColor: 'var(--color-dorado-mate, #B08E62)',
+          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(212, 163, 89, 0.2)',
         };
       case 'info':
         return {
@@ -105,6 +113,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       case 'success':
         return <CheckCircle2 size={18} color={color} style={{ flexShrink: 0 }} />;
       case 'error':
+        return <AlertCircle size={18} color={color} style={{ flexShrink: 0 }} />;
+      case 'warning':
         return <AlertCircle size={18} color={color} style={{ flexShrink: 0 }} />;
       case 'info':
         return <Info size={18} color={color} style={{ flexShrink: 0 }} />;

@@ -14,7 +14,7 @@ export const BreathingSimulator: React.FC<BreathingSimulatorProps> = ({ classNam
   const [breathSeconds, setBreathSeconds] = useState<number>(4);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
+    let timer: ReturnType<typeof setInterval> | null = null;
     if (breathActive) {
       timer = setInterval(() => {
         setBreathSeconds((prev) => {

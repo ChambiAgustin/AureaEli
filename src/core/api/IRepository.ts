@@ -13,9 +13,9 @@ export interface Product {
   tags: string[];
   isFeatured: boolean;
   isNew: boolean;
-  aroma: string;
-  color: string;
-  material: string;
+  aroma?: string;
+  color?: string;
+  material?: string;
 }
 
 // Categoría dinámica (editable desde el admin)

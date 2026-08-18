@@ -62,14 +62,14 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({
   // Manejo de incremento y decremento de cantidad
   const handleIncrease = () => {
     if (product.stock && quantity < product.stock) {
-      HapticsService.selection();
+      HapticsService.light();
       setQuantity((prev) => prev + 1);
     }
   };
 
   const handleDecrease = () => {
     if (quantity > 1) {
-      HapticsService.selection();
+      HapticsService.light();
       setQuantity((prev) => prev - 1);
     }
   };

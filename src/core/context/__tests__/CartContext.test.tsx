@@ -20,6 +20,9 @@ const mockProduct1: Product = {
   tags: ['calma', 'noche'],
   isFeatured: true,
   isNew: false,
+  aroma: 'Lavanda',
+  color: 'Dorado',
+  material: 'Cera de soja',
 };
 
 const mockProduct2: Product = {
@@ -36,6 +39,9 @@ const mockProduct2: Product = {
   tags: ['meditacion'],
   isFeatured: false,
   isNew: true,
+  aroma: 'Lavanda',
+  color: 'Dorado',
+  material: 'Cera de soja',
 };
 
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (

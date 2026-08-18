@@ -189,6 +189,9 @@ describe('SupabaseRepository Mappers', () => {
         tags: [],
         isFeatured: false,
         isNew: true,
+        aroma: 'Lavanda',
+        color: 'Dorado',
+        material: 'Cera de soja',
       };
 
       const row = fromProduct(newProduct);

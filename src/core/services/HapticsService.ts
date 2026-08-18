@@ -13,6 +13,11 @@ export class HapticsService {
     }
   }
 
+  /** Vibra brevemente para selecciones en la UI */
+  public static selection(): void {
+    HapticsService.vibrate(10);
+  }
+
   /** Vibra brevemente para interacciones leves (botones, selecciones) */
   public static light(): void {
     HapticsService.vibrate(10);

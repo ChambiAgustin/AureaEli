@@ -50,7 +50,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : error.message);
 
         const profile = await apiRepository.getUserProfile();
-        onLoginSuccess(profile);
+        onLoginSuccess?.(profile);
         triggerToast(`Bienvenida de regreso, ${profile.name}.`);
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -68,7 +68,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         }
 
         const profile = await apiRepository.getUserProfile();
-        onLoginSuccess(profile);
+        onLoginSuccess?.(profile);
         triggerToast('Alma registrada con éxito. Iniciando diario de calma...');
       }
     } catch (err) {
