@@ -14,7 +14,7 @@ import CatalogFilters, { type IntentionType, type SortOptionType } from './compo
 import ProductGrid from './components/ProductGrid';
 
 
-const normalizeString = (str: string) =>
+const normalizeString = (str?: string): string =>
   str ? str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
 
 interface CatalogPageProps {
@@ -210,7 +210,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
 
   // Aromas derivados de los productos reales
   const aromas = ['Todos', ...Array.from(
-    new Set(products.map(p => p.aroma).filter(a => a && a !== 'Neutro'))
+    new Set(products.map(p => p.aroma).filter((item): item is string => Boolean(item && item !== 'Neutro')))
   ).slice(0, 8)];
 
   const handleResetFilters = () => {
