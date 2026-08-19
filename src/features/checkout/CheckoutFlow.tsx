@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -87,6 +88,18 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
 
   const totalCart = cartItems.reduce((acc, curr) => acc + (curr.product.promoPrice ?? curr.product.price) * curr.quantity, 0);
 
+  // Bloqueo de scroll en document.body mientras el Checkout esté abierto
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
   // Detección de Retorno de Mercado Pago vía URL params (?status=success&order_id=...)
   useEffect(() => {
     if (!urlStatus) return;
@@ -155,7 +168,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
           return 0;
         }
 
-        // Cycle breathing phases every 3 seconds roughly
+        // Ciclo de fases de respiración (10s)
         const remaining = prev - 1;
         if (remaining > 6) {
           setBreathPhase('Inhalá');
@@ -171,7 +184,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     return () => clearInterval(timer);
   }, [isOpen, step, isBreathDone, triggerToast]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === 'undefined') return null;
 
   // Step 2 Submission (Shipping details validated)
   const handleShippingSubmit = (e: React.FormEvent) => {
@@ -275,24 +288,24 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     }
   };
 
-
-  return (
+  const checkoutContent = (
     <div
       style={{
         position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'var(--color-bg-main)',
-        zIndex: 1000,
-        overflowY: 'auto',
-        animation: 'fadeInCheckout 0.5s ease-out',
+        inset: 0,
+        width: '100vw',
+        minHeight: '100dvh',
+        zIndex: 9999,
+        backgroundColor: 'rgba(21, 19, 17, 0.98)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         display: 'flex',
         flexDirection: 'column',
+        overflowY: 'auto',
+        animation: 'fadeInCheckout 0.4s ease-out',
       }}
     >
-      {/* Header Fijo Premium */}
+      {/* Header Fijo Superior */}
       <header
         style={{
           borderBottom: '1px solid rgba(197, 168, 128, 0.15)',
@@ -300,11 +313,13 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          backgroundColor: 'rgba(35, 31, 28, 0.95)',
-          backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(21, 19, 17, 0.95)',
+          backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          width: '100%',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -315,6 +330,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 else if (step === 'shipping') setStep('breath');
                 else onClose();
               }}
+              aria-label="Volver"
               style={{
                 background: 'none',
                 border: 'none',
@@ -322,18 +338,21 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
+                padding: '6px',
+                borderRadius: '8px',
+                transition: 'background-color 0.2s ease',
               }}
             >
               <ArrowLeft size={20} />
             </button>
           )}
-          <Typography variant="h3" style={{ fontSize: '1.2rem', textTransform: 'uppercase' }}>
+          <Typography variant="h3" style={{ fontSize: '1.15rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
             Ritual de Compra Consciente
           </Typography>
         </div>
 
         {step !== 'success' && (
-          <div style={{ display: 'flex', gap: '8px', fontSize: '0.75rem', fontFamily: 'var(--font-sans)', color: 'var(--color-text-muted)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', fontFamily: 'var(--font-sans)', color: 'var(--color-text-muted)' }}>
             <span style={{ color: step === 'breath' ? 'var(--color-dorado-mate)' : 'inherit', fontWeight: step === 'breath' ? 'bold' : 'normal' }}>1. Pausa</span>
             <span>•</span>
             <span style={{ color: step === 'shipping' ? 'var(--color-dorado-mate)' : 'inherit', fontWeight: step === 'shipping' ? 'bold' : 'normal' }}>2. Envío</span>
@@ -343,61 +362,62 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         )}
       </header>
 
-      {/* Contenido Principal con Centrado */}
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-        <div style={{ width: '100%', maxWidth: '600px' }}>
+      {/* Contenido Principal Centrado (100% Viewport) */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '40px 20px' }}>
+        <div style={{ width: '100%', maxWidth: '580px', margin: '0 auto' }}>
           
-          {/* ================= STEP 1: RESPIRACIÓN SAGRADA ================= */}
+          {/* ================= STEP 1: RESPIRACIÓN SAGRADA / PAUSA CONSCIENTE ================= */}
           {step === 'breath' && (
             <div style={{ textAlign: 'center', animation: 'fadeIn 0.6s ease' }}>
               <div style={{ maxWidth: '480px', margin: '0 auto' }}>
                 <Typography variant="caption" color="gold" weight="semibold">Fase 1: Conexión Inmersiva</Typography>
                 <Typography variant="h2" style={{ marginTop: '12px', marginBottom: '16px' }}>Pausa Consciente</Typography>
-                <Typography variant="body" color="muted" style={{ fontSize: '0.95rem', marginBottom: '40px', lineHeight: '1.8' }}>
+                <Typography variant="body" color="muted" style={{ fontSize: '0.95rem', marginBottom: '36px', lineHeight: '1.8' }}>
                   En Aurea Elizabeth creemos en la compra consciente. Te invitamos a tomar una pausa de 10 segundos para centrarte, calmar tu sistema nervioso y alinear esta compra con tu propósito de bienestar.
                 </Typography>
 
-                {/* Círculo de respiración */}
-                <div style={{ position: 'relative', width: '200px', height: '200px', margin: '0 auto 40px' }}>
+                {/* Esfera concéntrica de respiración centrada (220px) */}
+                <div style={{ position: 'relative', width: '220px', height: '220px', margin: '0 auto 36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* Anillo exterior con checkoutPulse 3.5s */}
                   <div
                     style={{
                       position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
+                      inset: 0,
+                      width: '220px',
+                      height: '220px',
                       borderRadius: '50%',
                       border: '2px solid var(--color-dorado-mate)',
-                      animation: isBreathDone ? 'none' : 'checkoutPulse 3s infinite ease-in-out',
-                      opacity: 0.3,
+                      animation: isBreathDone ? 'none' : 'checkoutPulse 3.5s infinite ease-in-out',
+                      opacity: 0.35,
+                      pointerEvents: 'none',
                     }}
                   />
                   
+                  {/* Esfera interior con gradiente oliva/bosque */}
                   <div
                     style={{
-                      position: 'absolute',
-                      top: '15px',
-                      left: '15px',
-                      width: '170px',
-                      height: '170px',
+                      width: '180px',
+                      height: '180px',
                       borderRadius: '50%',
                       background: 'radial-gradient(circle, var(--color-oliva-salvia) 0%, var(--color-bosque-suave) 100%)',
-                      boxShadow: '0 0 30px rgba(110, 126, 107, 0.4)',
+                      boxShadow: '0 0 35px rgba(110, 126, 107, 0.45)',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'var(--color-crema-calido)',
                       transition: 'all 0.5s ease',
-                      border: isBreathDone ? '2px solid var(--color-dorado-mate)' : 'none',
+                      border: isBreathDone ? '2px solid var(--color-dorado-mate)' : '1px solid rgba(197, 168, 128, 0.3)',
+                      position: 'relative',
+                      zIndex: 1,
                     }}
                   >
-                    <Wind size={28} style={{ marginBottom: '6px', opacity: 0.8 }} />
-                    <Typography variant="h3" style={{ fontSize: '1.2rem', letterSpacing: '0.05em' }}>
+                    <Wind size={30} style={{ marginBottom: '6px', opacity: 0.85 }} />
+                    <Typography variant="h3" style={{ fontSize: '1.25rem', letterSpacing: '0.05em' }}>
                       {breathPhase}
                     </Typography>
                     {!isBreathDone && (
-                      <span style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px', fontFamily: 'var(--font-sans)' }}>
+                      <span style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '4px', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
                         {countdown}s
                       </span>
                     )}
@@ -405,21 +425,21 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 </div>
 
                 {isBreathDone ? (
-                  <div style={{ animation: 'fadeIn 0.5s ease' }}>
-                    <Typography variant="body-sm" color="gold" weight="semibold" style={{ display: 'block', marginBottom: '24px' }}>
+                  <div style={{ animation: 'fadeIn 0.5s ease', width: '100%' }}>
+                    <Typography variant="body-sm" color="gold" weight="semibold" style={{ display: 'block', marginBottom: '20px' }}>
                       ✓ Energía integrada. Tu altar está listo para continuar.
                     </Typography>
                     <Button
                       variant="primary"
                       onClick={() => setStep('shipping')}
-                      style={{ width: '100%', padding: '16px', borderRadius: '16px' }}
+                      style={{ width: '100%', minHeight: '52px', padding: '16px', borderRadius: '16px', fontSize: '1rem', fontWeight: 600 }}
                     >
                       Continuar al Envío
                     </Button>
                   </div>
                 ) : (
                   <Typography variant="body-sm" color="muted" italic>
-                    Respirá hondo... seguí el ritmo del círculo...
+                    Respirá hondo... seguí el ritmo de la esfera...
                   </Typography>
                 )}
               </div>
@@ -428,10 +448,10 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
 
           {/* ================= STEP 2: DATOS DE ENVÍO ================= */}
           {step === 'shipping' && (
-            <Card className="glass-panel" style={{ padding: '32px', border: '1px solid rgba(197, 168, 128, 0.2)', animation: 'fadeIn 0.6s ease' }}>
+            <Card className="glass-panel" style={{ padding: '32px 28px', border: '1px solid rgba(197, 168, 128, 0.2)', animation: 'fadeIn 0.6s ease' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
                 <MapPin size={18} color="var(--color-dorado-mate)" />
-                <Typography variant="h2" style={{ fontSize: '1.5rem' }}>Detalles de Entrega</Typography>
+                <Typography variant="h2" style={{ fontSize: '1.4rem' }}>Detalles de Entrega</Typography>
               </div>
 
               <form onSubmit={handleShippingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -523,7 +543,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 <Button
                   type="submit"
                   variant="primary"
-                  style={{ width: '100%', padding: '16px', borderRadius: '16px', marginTop: '12px' }}
+                  style={{ width: '100%', minHeight: '52px', padding: '16px', borderRadius: '16px', marginTop: '12px', fontSize: '1rem', fontWeight: 600 }}
                 >
                   Continuar al Método de Pago
                 </Button>
@@ -534,7 +554,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
           {/* ================= STEP 3: MÉTODOS DE PAGO ================= */}
           {step === 'payment' && (
             <div style={{ animation: 'fadeIn 0.6s ease' }}>
-              <Card className="glass-panel" style={{ padding: '32px', border: '1px solid rgba(197, 168, 128, 0.25)' }}>
+              <Card className="glass-panel" style={{ padding: '32px 28px', border: '1px solid rgba(197, 168, 128, 0.25)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
                   <CreditCard size={20} color="var(--color-dorado-mate)" />
                   <Typography variant="h2" style={{ fontSize: '1.4rem' }}>Seleccioná tu Forma de Pago</Typography>
@@ -639,6 +659,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                     disabled={isSubmitting}
                     style={{
                       width: '100%',
+                      minHeight: '52px',
                       padding: '16px',
                       borderRadius: '16px',
                       display: 'flex',
@@ -646,6 +667,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                       justifyContent: 'center',
                       gap: '8px',
                       fontSize: '1rem',
+                      fontWeight: 600,
                     }}
                   >
                     <span>
@@ -819,19 +841,19 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         </div>
       </main>
 
-      {/* Estilos locales para las animaciones */}
+      {/* Estilos locales para animaciones fluidas */}
       <style>{`
         @keyframes fadeInCheckout {
-          from { opacity: 0; }
-          to { opacity: 1; }
+          from { opacity: 0; transform: scale(0.99); }
+          to { opacity: 1; transform: scale(1); }
         }
         @keyframes checkoutPulse {
-          0% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.15); opacity: 0.6; }
-          100% { transform: scale(1); opacity: 0.3; }
+          0% { transform: scale(1); opacity: 0.35; }
+          50% { transform: scale(1.15); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 0.35; }
         }
         @keyframes scaleUpIn {
-          from { transform: scale(0.9); opacity: 0; }
+          from { transform: scale(0.92); opacity: 0; }
           to { transform: scale(1); opacity: 1; }
         }
         @keyframes successIconPulse {
@@ -842,6 +864,8 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       `}</style>
     </div>
   );
+
+  return createPortal(checkoutContent, document.body);
 };
 
 const inputStyle: React.CSSProperties = {
