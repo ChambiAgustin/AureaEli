@@ -3,8 +3,9 @@ import type { Order, CartItem } from '../api/IRepository';
 
 export interface MercadoPagoPreferenceResponse {
   id: string;
-  init_point: string;
+  init_point?: string;
   sandbox_init_point?: string;
+  isDemo?: boolean;
 }
 
 export class MercadoPagoService {
@@ -79,13 +80,9 @@ export class MercadoPagoService {
    * Proveedor de preferencia simulada para entornos locales / sin MP_ACCESS_TOKEN configurado.
    */
   private static getFallbackPreference(order: Order): MercadoPagoPreferenceResponse {
-    const prefId = `PREF-${order.id.slice(0, 8)}-${Date.now()}`;
-    const checkoutUrl = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${prefId}`;
-
     return {
-      id: prefId,
-      init_point: checkoutUrl,
-      sandbox_init_point: checkoutUrl,
+      id: `demo-${order.id}`,
+      isDemo: true,
     };
   }
 }

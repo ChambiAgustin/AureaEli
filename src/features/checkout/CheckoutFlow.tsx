@@ -196,6 +196,55 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
     setStep('payment');
   };
 
+  const getWhatsAppUrl = (order: Order) => {
+    const items = order.items && order.items.length > 0 ? order.items : cartItems;
+    const itemsList = items
+      .map(
+        (i) =>
+          `• ${i.quantity}x *${i.product?.name || 'Elemento Botánico'}* — $${(((i.product?.promoPrice ?? i.product?.price) || 0) * i.quantity).toLocaleString('es-AR')}`
+      )
+      .join('\n');
+
+    const orderIdDisplay = order.id.startsWith('order-') ? order.id.slice(6) : order.id.slice(0, 8);
+    const orderTotal = order.total || totalCart || 0;
+
+    const waMsg = [
+      '🌿 *ÁUREA ELIZABETH* • _Altar & Ritual Botánico_',
+      '━━━━━━━━━━━━━━━━━━━━━',
+      '✨ *NUEVA ORDEN DE COMPRA CONSCIENTE*',
+      `📋 *N° de Pedido:* #${orderIdDisplay.toUpperCase()}`,
+      `📅 *Fecha:* ${new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      '',
+      `👤 *Cliente:* ${fullName || order.userProfile?.name || 'Cliente Aurea'}`,
+      `📧 *Email:* ${email || order.userProfile?.email || ''}`,
+      `📱 *Teléfono:* ${phone || order.customerPhone || ''}`,
+      '',
+      '📦 *ELEMENTOS SELECCIONADOS:*',
+      itemsList,
+      '',
+      `💰 *Total de Productos:* $${orderTotal.toLocaleString('es-AR')}`,
+      `📍 *Dirección de Entrega:* ${order.address || `${address}, ${city} (CP ${zipCode})`}`,
+      '🚚 *Envío:* A coordinar según localidad / correo',
+      '',
+      '💳 *Forma de Pago:* Transferencia Bancaria / Efectivo',
+      '━━━━━━━━━━━━━━━━━━━━━',
+      '🕯️ _Aguardamos los datos de la cuenta bancaria para concretar la transferencia y dar inicio a la preparación artesanal de nuestro ritual. ¡Muchas gracias!_'
+    ].join('\n');
+
+    return `${WHATSAPP_URL}?text=${encodeURIComponent(waMsg)}`;
+  };
+
+  const handleSimulatePaymentApproved = async () => {
+    if (!createdOrder) return;
+    try {
+      await apiRepository.updateOrderStatus(createdOrder.id, 'completed');
+    } catch (err) {
+      console.warn('[CheckoutFlow] No se pudo actualizar estado en BD:', err);
+    }
+    setCreatedOrder((prev) => (prev ? { ...prev, status: 'completed', paymentStatus: 'approved' } : null));
+    triggerToast('¡Pago simulado con éxito! Tu orden quedó registrada como aprobada.');
+  };
+
   // Step 3 Submission (Process MercadoPago Checkout Pro or WhatsApp)
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,40 +278,7 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
       localStorage.removeItem('aurea_cart_v1');
 
       if (paymentMethod === 'whatsapp') {
-        const itemsList = cartItems
-          .map(
-            (i) =>
-              `• ${i.quantity}x *${i.product.name}* — $${((i.product.promoPrice ?? i.product.price) * i.quantity).toLocaleString('es-AR')}`
-          )
-          .join('\n');
-
-        const orderIdDisplay = order.id.startsWith('order-') ? order.id.slice(6) : order.id.slice(0, 8);
-
-        const waMsg = [
-          '🌿 *ÁUREA ELIZABETH* • _Altar & Ritual Botánico_',
-          '━━━━━━━━━━━━━━━━━━━━━',
-          '✨ *NUEVA ORDEN DE COMPRA CONSCIENTE*',
-          `📋 *N° de Pedido:* #${orderIdDisplay.toUpperCase()}`,
-          `📅 *Fecha:* ${new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-          '',
-          `👤 *Cliente:* ${fullName}`,
-          `📧 *Email:* ${email}`,
-          `📱 *Teléfono:* ${phone}`,
-          '',
-          '📦 *ELEMENTOS SELECCIONADOS:*',
-          itemsList,
-          '',
-          `💰 *Total de Productos:* $${totalCart.toLocaleString('es-AR')}`,
-          `📍 *Dirección de Entrega:* ${address}, ${city} (CP ${zipCode})`,
-          '🚚 *Envío:* A coordinar según localidad / correo',
-          '',
-          '💳 *Forma de Pago:* Transferencia Bancaria / Efectivo',
-          '━━━━━━━━━━━━━━━━━━━━━',
-          '🕯️ _Aguardamos los datos de la cuenta bancaria para concretar la transferencia y dar inicio a la preparación artesanal de nuestro ritual. ¡Muchas gracias!_'
-        ].join('\n');
-
-        const encodedMsg = encodeURIComponent(waMsg);
-        const whatsappUrl = `${WHATSAPP_URL}?text=${encodedMsg}`;
+        const whatsappUrl = getWhatsAppUrl(order);
 
         triggerToast('Orden registrada. Redirigiendo a Asistencia por WhatsApp...');
         window.open(whatsappUrl, '_blank');
@@ -276,7 +292,11 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
         order.mercadopagoPreferenceId = preference.id;
         order.paymentStatus = 'pending';
 
-        triggerToast('¡Preferencia de Mercado Pago lista!');
+        if (preference.isDemo || !preference.init_point) {
+          triggerToast('Orden registrada en modo demostración.');
+        } else {
+          triggerToast('¡Preferencia de Mercado Pago lista!');
+        }
         onOrderComplete(order);
         setStep('success');
       }
@@ -791,32 +811,123 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                 </div>
               </div>
 
-              {/* Botones de acción */}
+              {/* Botones de acción y paneles según método y preferencia */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {paymentMethod === 'mercadopago' && mpPreference && (
-                  <a
-                    href={mpPreference.init_point}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {paymentMethod === 'mercadopago' && (
+                  mpPreference?.init_point && !mpPreference?.isDemo ? (
+                    <a
+                      href={mpPreference.init_point}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        backgroundColor: '#009EE3',
+                        color: '#ffffff',
+                        padding: '14px 24px',
+                        borderRadius: '14px',
+                        fontWeight: '600',
+                        fontSize: '0.95rem',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 12px rgba(0, 158, 227, 0.25)',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      <span>Ir a Mercado Pago</span>
+                      <ExternalLink size={18} />
+                    </a>
+                  ) : (
+                    <>
+                      <div
+                        style={{
+                          backgroundColor: 'rgba(110, 126, 107, 0.12)',
+                          border: '1px solid rgba(110, 126, 107, 0.3)',
+                          borderRadius: '16px',
+                          padding: '16px 20px',
+                          marginBottom: '4px',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                        }}
+                      >
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#2d372e', lineHeight: '1.5' }}>
+                          🌿 <strong>Modo de Demostración:</strong> Para habilitar el cobro automático con tarjetas en vivo, se requiere configurar el Access Token de Mercado Pago en Supabase. Tu pedido ya fue registrado con éxito (<strong>#{createdOrder.id}</strong>).
+                        </p>
+                      </div>
+
+                      <Button
+                        variant="primary"
+                        onClick={() => window.open(getWhatsAppUrl(createdOrder), '_blank')}
+                        style={{
+                          width: '100%',
+                          padding: '14px 20px',
+                          borderRadius: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontWeight: '600',
+                          fontSize: '0.95rem',
+                          backgroundColor: '#25D366',
+                          borderColor: '#25D366',
+                          color: '#ffffff',
+                        }}
+                      >
+                        <MessageSquare size={18} />
+                        <span>Coordinar Pago por WhatsApp</span>
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        onClick={handleSimulatePaymentApproved}
+                        disabled={createdOrder.paymentStatus === 'approved'}
+                        style={{
+                          width: '100%',
+                          padding: '14px 20px',
+                          borderRadius: '14px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          fontWeight: '600',
+                          fontSize: '0.92rem',
+                          backgroundColor: createdOrder.paymentStatus === 'approved' ? 'rgba(110, 126, 107, 0.2)' : 'rgba(197, 168, 128, 0.18)',
+                          color: '#231f1c',
+                          border: '1px solid rgba(197, 168, 128, 0.35)',
+                        }}
+                      >
+                        <CheckCircle size={18} color="#6e7e6b" />
+                        <span>{createdOrder.paymentStatus === 'approved' ? 'Pago Simulado Aprobado ✓' : 'Simular Pago Aprobado'}</span>
+                      </Button>
+                    </>
+                  )
+                )}
+
+                {paymentMethod === 'whatsapp' && (
+                  <Button
+                    variant="primary"
+                    onClick={() => window.open(getWhatsAppUrl(createdOrder), '_blank')}
                     style={{
+                      width: '100%',
+                      padding: '14px 20px',
+                      borderRadius: '14px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      backgroundColor: '#009EE3',
-                      color: '#ffffff',
-                      padding: '14px 24px',
-                      borderRadius: '14px',
                       fontWeight: '600',
                       fontSize: '0.95rem',
-                      textDecoration: 'none',
-                      boxShadow: '0 4px 12px rgba(0, 158, 227, 0.25)',
-                      transition: 'all 0.3s ease',
+                      backgroundColor: '#25D366',
+                      borderColor: '#25D366',
+                      color: '#ffffff',
                     }}
                   >
-                    <span>Ir a Mercado Pago</span>
-                    <ExternalLink size={18} />
-                  </a>
+                    <MessageSquare size={18} />
+                    <span>Coordinar Pago por WhatsApp</span>
+                  </Button>
                 )}
 
                 <Button
